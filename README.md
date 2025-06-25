@@ -101,12 +101,14 @@ clamscan --datadir="D:\clamav-1.4.3.win.x64\clamav-1.4.3.win.x64\database" file.
 
 ---
 
+
 ### 🔹 FTP Server
 - Cài đặt FileZilla Server.
 - Tạo user và cấp quyền thư mục.
 - Kích hoạt chế độ Passive nếu cần (mport).
 
 ---
+
 
 ## 🚀 Cách chạy hệ thống
 
@@ -126,6 +128,7 @@ mput *.txt          # → Quét từng file → Chỉ upload file sạch
 get report.docx
 status
 quit
+
 
 
 📐 Sơ đồ kiến trúc hệ thống:
