@@ -132,6 +132,7 @@ quit
 
 
 📐 Sơ đồ kiến trúc hệ thống:
+<details> <summary>📂 Bấm để xem sơ đồ</summary>
 +---------------------+
 |     FTP Client      | <------- User command
 |  (ftp_client.py)    |
@@ -152,7 +153,9 @@ quit
 |     FTP Server      |
 |  (FileZilla/vsftpd) |
 +---------------------+
+</details>
 
+  
 📜 Các lệnh được hỗ trợ
 📁 File và thư mục
 + ls – Liệt kê file/thư mục trên server
