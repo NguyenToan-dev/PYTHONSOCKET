@@ -39,9 +39,67 @@ Dự án mô phỏng hệ thống truyền file an toàn, nơi mọi file cần 
 
 ## 🏗️ Cài đặt và cấu hình
 
-### 🔹 ClamAV
-- Tải từ [https://www.clamav.net/downloads](https://www.clamav.net/downloads)
-- Đảm bảo `clamscan` có thể chạy từ dòng lệnh hoặc chỉnh đường dẫn trong `clamav_agent.py`.
+### 🔹 Cài đặt ClamAV trên Windows
+
+1. Truy cập trang:
+   👉 [https://www.clamav.net/downloads](https://www.clamav.net/downloads)
+
+2. Trong mục **ClamAV for Windows**, tải file `.zip` có tên như:
+
+3. Giải nén vào thư mục ví dụ:
+
+4. **Cập nhật biến môi trường PATH**:
+- Mở **Start** → gõ `Environment Variables`
+- Chọn **Edit the system environment variables**
+- Trong cửa sổ System Properties, chọn **Environment Variables**
+- Trong phần **System variables**, chọn `Path` → **Edit** → **New**
+- Thêm đường dẫn:
+  ```
+  D:\ClamAV
+  ```
+
+5. **Kiểm tra cài đặt**:
+- Mở lại **Command Prompt**
+- Gõ:
+  ```
+  clamscan --version
+  ```
+- Nếu hiện ra phiên bản ClamAV → bạn đã cài đặt thành công!
+
+---
+### 🛠️🔹 Tải ClamAV Database (tải nếu muốn scan file được)
+
+#### 🔧 Bước 1: Tạo thư mục chứa database
+
+Tạo thư mục theo đường dẫn: D:\clamav-1.4.3.win.x64\clamav-1.4.3.win.x64\database
+
+> 📁 Đây là nơi ClamAV sẽ tìm các file `*.cvd` chứa dữ liệu virus.
+
+---
+
+#### 🌐 Bước 2: Tải các file cơ sở dữ liệu
+
+Truy cập từng liên kết dưới đây để tải về 3 file cần thiết:
+
+| Tên file      | Link tải xuống                                               |
+|---------------|--------------------------------------------------------------|
+| `main.cvd`    | https://database.clamav.net/main.cvd                         |
+| `daily.cvd`   | https://database.clamav.net/daily.cvd                        |
+| `bytecode.cvd`| https://database.clamav.net/bytecode.cvd                     |
+
+#### 👉 Cách tải:
+- Mở từng link trên trong trình duyệt.
+- Nhấn **chuột phải** → **Save As...**
+- Chọn thư mục `database` đã tạo ở bước trên để lưu lại.
+
+---
+
+✅ Sau khi tải xong, bạn đã có đầy đủ dữ liệu để `clamscan` hoạt động mà không cần kết nối mạng.
+
+> 💡 *Gợi ý:* Nếu ClamAV không tự phát hiện thư mục database, bạn có thể thêm tùy chọn `--datadir` khi chạy `clamscan`, ví dụ:
+clamscan --datadir="D:\clamav-1.4.3.win.x64\clamav-1.4.3.win.x64\database" file.txt
+
+---
 
 ### 🔹 FTP Server
 - Cài đặt FileZilla Server.
@@ -68,6 +126,7 @@ mput *.txt          # → Quét từng file → Chỉ upload file sạch
 get report.docx
 status
 quit
+
 
 📐 Sơ đồ kiến trúc hệ thống:
 +---------------------+
