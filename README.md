@@ -131,7 +131,8 @@ powershell: python ftp_client.py
 ---
 
 📐 Sơ đồ kiến trúc hệ thống:
-<details> <summary>📂 Bấm để xem sơ đồ</summary>
+<details>
+<summary><b>📂 Bấm để xem sơ đồ kiến trúc</b></summary>
 ```plaintext
 +---------------------+
 |     FTP Client      | <------- User command
@@ -153,7 +154,6 @@ powershell: python ftp_client.py
 |     FTP Server      |
 |  (FileZilla/vsftpd) |
 +---------------------+
-```
 </details>
 ---
 📜 Các lệnh được hỗ trợ
