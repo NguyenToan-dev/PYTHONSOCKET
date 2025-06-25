@@ -133,6 +133,7 @@ quit
 
 📐 Sơ đồ kiến trúc hệ thống:
 <details> <summary>📂 Bấm để xem sơ đồ</summary>
+  ```plaintext
 +---------------------+
 |     FTP Client      | <------- User command
 |  (ftp_client.py)    |
