@@ -120,14 +120,14 @@ powershell: python server.py
 powershell: python ftp_client.py
 
 ### Ví dụ lệnh FTP Client:
-open 127.0.0.1 21: Kết nối tới FTP server local
-ls: Liệt kê file (sau khi xác thực)
-cd /upload: Vào thư mục upload
-put file.pdf → Gửi file tới ClamAVAgent để quét trước khi upload
-mput *.txt → Quét từng file .txt, chỉ upload file sạch
-get report.docx: Tải file xuống
-status: Kiểm tra trạng thái
-quit: Thoát
+- open 127.0.0.1 21: Kết nối tới FTP server local
+- ls: Liệt kê file (sau khi xác thực)
+- cd /upload: Vào thư mục upload
+- put file.pdf → Gửi file tới ClamAVAgent để quét trước khi upload
+- mput *.txt → Quét từng file .txt, chỉ upload file sạch
+- get report.docx: Tải file xuống
+- status: Kiểm tra trạng thái
+- quit: Thoát
 ---
 
 📐 Sơ đồ kiến trúc hệ thống:
