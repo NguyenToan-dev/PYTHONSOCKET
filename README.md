@@ -128,10 +128,11 @@ mput *.txt → Quét từng file .txt, chỉ upload file sạch
 get report.docx: Tải file xuống
 status: Kiểm tra trạng thái
 quit: Thoát
+---
 
 📐 Sơ đồ kiến trúc hệ thống:
 <details> <summary>📂 Bấm để xem sơ đồ</summary>
-  ```plaintext
+```plaintext
 +---------------------+
 |     FTP Client      | <------- User command
 |  (ftp_client.py)    |
@@ -154,8 +155,7 @@ quit: Thoát
 +---------------------+
 ```
 </details>
-
-  
+---
 📜 Các lệnh được hỗ trợ
 📁 File và thư mục
 + ls – Liệt kê file/thư mục trên server
