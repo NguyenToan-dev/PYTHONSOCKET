@@ -1,4 +1,5 @@
-from client.ftp_client import (
+#main.py
+from ftp_client import (
     list_files,
     change_directory,
     make_directory,
