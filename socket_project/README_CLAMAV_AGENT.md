@@ -16,26 +16,20 @@ ClamAV là công cụ chống virus mã nguồn mở, đa nền tảng. Hướng
 ### Bước 2: Cài đặt
 
 1. Giải nén file:
+- unzip clamav-1.4.3.win.x64.zip -d C:\ClamAV
 
-unzip clamav-1.4.3.win.x64.zip -d C:\ClamAV
-
-3. Di chuyển vào thư mục cài đặt  (giả sử là C:\ClamAV\clamav-1.4.3.win.x64)
-cd C:\ClamAV\clamav-1.4.3.win.x64
+2. Di chuyển vào thư mục cài đặt  (giả sử là C:\ClamAV\clamav-1.4.3.win.x64)
+- cd C:\ClamAV\clamav-1.4.3.win.x64
 
 ### Bước 3: Cấu hình
 1. Sao chép file cấu hình mẫu từ conf_examples sang thư mục chính
 
-2. Đổi tên file (bỏ phần .sample):
+2. Đổi tên file (bỏ phần .sample): clamd.conf.sample → clamd.conf; freshclam.conf.sample → freshclam.conf
 
-3. clamd.conf.sample → clamd.conf
+3. Chỉnh sửa file cấu hình:
+- Xóa dòng chứa Example: (thường là dòng số 8)
 
-4. freshclam.conf.sample → freshclam.conf
-
-5. Chỉnh sửa file cấu hình:
-
-6. Xóa dòng chứa Example: (thường là dòng số 8)
-
-7. Lưu các thay đổi
+4. Lưu các thay đổi
 
 ### Bước 4: Cập nhật cơ sở dữ liệu
 1. Mở **CMD**, chạy:
@@ -56,21 +50,21 @@ Tại sao nên dùng ClamD?
 ### Bước 1: Cấu hình clamd.conf
 Mở file clamd.conf và chỉnh sửa các thông số sau:
 1. Kết nối TCP
-TCPSocket 3310
-TCPAddr 127.0.0.1
+- TCPSocket 3310
+- TCPAddr 127.0.0.1
 
 2. Đường dẫn log
-LogFile "C:\ClamAV\clamav-1.4.3.win.x64\clamd.log"
-LogTime yes
-LogFileMaxSize 5M
+- LogFile "C:\ClamAV\clamav-1.4.3.win.x64\clamd.log"
+- LogTime yes
+- LogFileMaxSize 5M
 
 3. Thư mục database
-DatabaseDirectory "C:\ClamAV\clamav-1.4.3.win.x64\database"
+- DatabaseDirectory "C:\ClamAV\clamav-1.4.3.win.x64\database"
 
 4. Tối ưu hiệu năng (tuỳ chọn)
-ScanOLE2 no
-ScanPDF no
-ScanSWF no
+- ScanOLE2 no
+- ScanPDF no
+- ScanSWF no
 -> Sao cho các phần trên không còn comment (#) trong file nữa
 ### Bước 2: Cài đặt
 1. Mở **CMD**, chạy:
