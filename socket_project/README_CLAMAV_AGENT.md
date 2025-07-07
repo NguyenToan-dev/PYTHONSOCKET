@@ -54,19 +54,19 @@ Tại sao nên dùng ClamD?
 
 ### Bước 1: Cấu hình clamd.conf
 Mở file clamd.conf và chỉnh sửa các thông số sau:
-# Kết nối TCP
+1. Kết nối TCP
 TCPSocket 3310
 TCPAddr 127.0.0.1
 
-# Đường dẫn log
+2. Đường dẫn log
 LogFile "C:\ClamAV\clamav-1.4.3.win.x64\clamd.log"
 LogTime yes
 LogFileMaxSize 5M
 
-# Thư mục database
+3. Thư mục database
 DatabaseDirectory "C:\ClamAV\clamav-1.4.3.win.x64\database"
 
-# Tối ưu hiệu năng (tuỳ chọn)
+4. Tối ưu hiệu năng (tuỳ chọn)
 ScanOLE2 no
 ScanPDF no
 ScanSWF no
