@@ -71,3 +71,6 @@ Mở file clamd.conf và chỉnh sửa các thông số sau:
 cd C:\ClamAV\clamav-1.4.3.win.x64
 2. Chạy clamd.exe --config-file="clamd.conf"
 3. Cho tới khi nào cmd hiện ra Self checking every 600 seconds ->Là cài đặt thành công có thể tắt cmd và sử dụng.
+
+## PHẦN 3: CHẠY CODE
+1. Mở 1 terminal
