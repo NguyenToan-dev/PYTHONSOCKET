@@ -18,7 +18,7 @@ ClamAV là công cụ chống virus mã nguồn mở, đa nền tảng. Hướng
 1. Giải nén file:
 - unzip clamav-1.4.3.win.x64.zip -d C:\ClamAV
 
-2. Di chuyển vào thư mục cài đặt  (giả sử là C:\ClamAV\clamav-1.4.3.win.x64)
+2. Di chuyển vào thư mục cài đặt chứa file clamscan.exe  (giả sử là C:\ClamAV\clamav-1.4.3.win.x64)
 - cd C:\ClamAV\clamav-1.4.3.win.x64
 
 ### Bước 3: Cấu hình
