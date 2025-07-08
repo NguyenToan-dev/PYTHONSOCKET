@@ -35,7 +35,7 @@ Dự án mô phỏng hệ thống truyền file an toàn, nơi mọi file cần 
 * Dùng `clamscan` để quét virus.
 * Gửi kết quả `OK` hoặc `INFECTED` về cho FTP Client.
 
-### 3. FTP Server
+### 3. `FTP Server`
 
 * Dùng phần mềm như FileZilla Server.
 * Chỉ nhận file nếu đã qua kiểm duyệt từ ClamAVAgent.
@@ -46,7 +46,7 @@ Dự án mô phỏng hệ thống truyền file an toàn, nơi mọi file cần 
 
 ### 🔹 <img src="https://www.clamav.net/assets/clamav-trademark.png" alt="ClamAV Logo" width="20"/> Cài đặt ClamAV trên Windows
 
-#### Giới thiệu
+#### `Giới thiệu`
 
 ClamAV là công cụ chống virus mã nguồn mở, đa nền tảng. Hướng dẫn này sẽ giúp bạn cài đặt ClamAV trên Windows với hai chế độ:
 
