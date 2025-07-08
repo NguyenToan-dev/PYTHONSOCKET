@@ -1,11 +1,13 @@
 # 🛡️ Secure FTP Client with Virus Scanning via ClamAVAgent
 
 ## 📚 Course Info
-- **Môn học**: Mạng máy tính
-- **Lớp**: 24C10
-- **Nhóm thực hiện**:
-  - Nguyễn Khánh Toàn – MSSV: 24127252
-  - Nguyễn Tiến Cường – MSSV: 24127337
+
+* **Môn học**: Mạng máy tính
+* **Lớp**: 24C10
+* **Nhóm thực hiện**:
+
+  * Nguyễn Khánh Toàn – MSSV: 24127252
+  * Nguyễn Tiến Cường – MSSV: 24127337
 
 ---
 
@@ -13,27 +15,30 @@
 
 Dự án mô phỏng hệ thống truyền file an toàn, nơi mọi file cần được quét virus bằng ClamAV trước khi được upload lên FTP Server. Hệ thống gồm:
 
-- **FTP Client**: Chương trình chính, cung cấp các lệnh FTP-like.
-- **ClamAVAgent**: Dịch vụ quét virus hoạt động qua socket.
-- **FTP Server**: Máy chủ nhận file sạch để lưu trữ.
+* **FTP Client**: Chương trình chính, cung cấp các lệnh FTP-like.
+* **ClamAVAgent**: Dịch vụ quét virus hoạt động qua socket.
+* **FTP Server**: Máy chủ nhận file sạch để lưu trữ.
 
 ---
 
 ## ⚙️ Thành phần hệ thống
 
 ### 1. `ftp_client.py`
-- Giao tiếp với FTP Server và ClamAVAgent.
-- Hỗ trợ các lệnh như `ls`, `cd`, `put`, `mput`, `get`, `mget`, v.v.
-- Tất cả các lệnh upload phải qua quét ClamAV trước.
+
+* Giao tiếp với FTP Server và ClamAVAgent.
+* Hỗ trợ các lệnh như `ls`, `cd`, `put`, `mput`, `get`, `mget`, v.v.
+* Tất cả các lệnh upload phải qua quét ClamAV trước.
 
 ### 2. `clamav_agent.py`
-- Chạy như một server nhận file từ client.
-- Dùng `clamscan` để quét virus.
-- Gửi kết quả `OK` hoặc `INFECTED` về cho FTP Client.
+
+* Chạy như một server nhận file từ client.
+* Dùng `clamscan` để quét virus.
+* Gửi kết quả `OK` hoặc `INFECTED` về cho FTP Client.
 
 ### 3. FTP Server
-- Dùng phần mềm như FileZilla Server.
-- Chỉ nhận file nếu đã qua kiểm duyệt từ ClamAVAgent.
+
+* Dùng phần mềm như FileZilla Server.
+* Chỉ nhận file nếu đã qua kiểm duyệt từ ClamAVAgent.
 
 ---
 
@@ -44,143 +49,158 @@ Dự án mô phỏng hệ thống truyền file an toàn, nơi mọi file cần 
 1. Truy cập trang:
    👉 [https://www.clamav.net/downloads](https://www.clamav.net/downloads)
 
-2. Trong mục **ClamAV for Windows**, tải file `.zip` có tên như:
+2. Tải file `.zip` (VD: `clamav-1.4.3.win.x64.zip`)
 
-3. Giải nén vào thư mục ví dụ:
+3. Giải nén vào thư mục (VD: `D:\ClamAV`)
 
-4. **Cập nhật biến môi trường PATH**:
-- Mở **Start** → gõ `Environment Variables`
-- Chọn **Edit the system environment variables**
-- Trong cửa sổ System Properties, chọn **Environment Variables**
-- Trong phần **System variables**, chọn `Path` → **Edit** → **New**
-- Thêm đường dẫn:
-  ```
-  D:\ClamAV
-  ```
+4. **Cập nhật PATH**:
 
-5. **Kiểm tra cài đặt**:
-- Mở lại **Command Prompt**
-- Gõ:
-  ```
-  clamscan --version
-  ```
-- Nếu hiện ra phiên bản ClamAV → bạn đã cài đặt thành công!
+* Mở **System Environment Variables**
+* Thêm `D:\ClamAV` vào `Path`
 
----
-### 🛠️🔹 Tải ClamAV Database (tải nếu muốn scan file được)
+5. **Kiểm tra**:
 
-#### 🔧 Bước 1: Tạo thư mục chứa database
+```sh
+clamscan --version
+```
 
-Tạo thư mục theo đường dẫn: D:\clamav-1.4.3.win.x64\clamav-1.4.3.win.x64\database
+### 🛠️🔹 Tải ClamAV Database
 
-> 📁 Đây là nơi ClamAV sẽ tìm các file `*.cvd` chứa dữ liệu virus.
+Tạo thư mục database và tải 3 file:
+
+* [`main.cvd`](https://database.clamav.net/main.cvd)
+* [`daily.cvd`](https://database.clamav.net/daily.cvd)
+* [`bytecode.cvd`](https://database.clamav.net/bytecode.cvd)
+
+> Gợi ý: Dùng `--datadir` nếu ClamAV không tìm thấy database.
 
 ---
-
-#### 🌐 Bước 2: Tải các file cơ sở dữ liệu
-
-Truy cập từng liên kết dưới đây để tải về 3 file cần thiết:
-
-| Tên file      | Link tải xuống                                               |
-|---------------|--------------------------------------------------------------|
-| `main.cvd`    | https://database.clamav.net/main.cvd                         |
-| `daily.cvd`   | https://database.clamav.net/daily.cvd                        |
-| `bytecode.cvd`| https://database.clamav.net/bytecode.cvd                     |
-
-#### 👉 Cách tải:
-- Mở từng link trên trong trình duyệt.
-- Nhấn **chuột phải** → **Save As...**
-- Chọn thư mục `database` đã tạo ở bước trên để lưu lại.
-
----
-
-✅ Sau khi tải xong, bạn đã có đầy đủ dữ liệu để `clamscan` hoạt động mà không cần kết nối mạng.
-
-> 💡 *Gợi ý:* Nếu ClamAV không tự phát hiện thư mục database, bạn có thể thêm tùy chọn `--datadir` khi chạy `clamscan`, ví dụ:
-clamscan --datadir="D:\clamav-1.4.3.win.x64\clamav-1.4.3.win.x64\database" file.txt
-
----
-
 
 ### 🔹 FTP Server
-- Cài đặt FileZilla Server.
-- Tạo user và cấp quyền thư mục.
-- Kích hoạt chế độ Passive nếu cần (mport).
+
+* Cài FileZilla Server
+* Tạo user, cấp quyền
+* Kích hoạt Passive mode (nếu cần)
 
 ---
-
 
 ## 🚀 Cách chạy hệ thống
 
 ### Bước 1: Chạy ClamAVAgent
-powershell: python clamav_agent.py
-### Bước 2: Chạy server
-powershell: python server.py
-### Bước 3: Chạy ftp_client
-powershell: python ftp_client.py
 
-### Ví dụ lệnh FTP Client:
-- open 127.0.0.1 21: Kết nối tới FTP server local
-- ls: Liệt kê file (sau khi xác thực)
-- cd /upload: Vào thư mục upload
-- put file.pdf → Gửi file tới ClamAVAgent để quét trước khi upload
-- mput *.txt → Quét từng file .txt, chỉ upload file sạch
-- get report.docx: Tải file xuống
-- status: Kiểm tra trạng thái
-- quit: Thoát
----
-
-📐 Sơ đồ kiến trúc hệ thống:
-```plaintext
-+---------------------+
-|     FTP Client      | <------- User command
-|  (ftp_client.py)    |
-+----------+----------+
-           |
-   Gửi file để quét virus
-           |
-           v
-+---------------------+
-|    ClamAVAgent      |
-|  (clamav_agent.py)  |
-+----------+----------+
-           |
-   Kết quả OK / INFECTED
-           |
-           v
-+---------------------+
-|     FTP Server      |
-|  (FileZilla/vsftpd) |
-+---------------------+
+```sh
+python clamav_agent.py
 ```
+
+### Bước 2: Chạy server
+
+```sh
+python server.py
+```
+
+### Bước 3: Chạy ftp\_client
+
+```sh
+python ftp_client.py
+```
+
+### Lệnh mẫu:
+
+* `open 127.0.0.1 21`
+* `put file.pdf`
+* `mput *.txt`
+* `get report.docx`
+* `status`, `quit`
+
 ---
-📜 Các lệnh được hỗ trợ
-📁 File và thư mục
-+ ls – Liệt kê file/thư mục trên server
 
-+ cd – Đổi thư mục
+## 📀 Sơ đồ kiến trúc hệ thống
 
-+ pwd – Hiển thị thư mục hiện tại
+```plaintext
++------------------+        +---------------------+        +--------------------+
+|   FTP Client     |        |   ClamAV Server     |        |    FTP Server      |
+|  (Your code)     |        | (ClamAV Agent code) |        | (e.g., FileZilla)  |
++------------------+        +---------------------+        +--------------------+
+         |                          |                              |
+         |----[1] Send file to scan------------------------------->|
+         |                          |                              |
+         |                          |--[2] Run: clamscan <file>--->|
+         |                          |                              |
+         |<------[3] Return scan result: OK / INFECTED-------------|
+         |                          |                              |
+         |---[4] If OK: Upload file via FTP----------------------->|
+         |                          |                              |
+```
 
-+ mkdir, rmdir – Tạo/Xoá thư mục
+---
 
-+ delete – Xoá file
+## 📜 Lệnh được hỗ trợ
 
-+ rename – Đổi tên file
+### 📁 File và thư mục
 
-⬇️⬆️ Tải lên / Tải xuống
-+ put, mput – Upload 1 hay nhiều file (phải quét virus)
+* `ls`, `cd`, `pwd`, `mkdir`, `rmdir`, `delete`, `rename`
 
-+ get, mget – Tải file từ server
+### ⬇️⬆️ Truyền file
 
-+ prompt – Bật/tắt xác nhận khi dùng mget, mput
+* `put`, `mput`, `get`, `mget`, `prompt`
 
-🧭 Quản lý phiên
-+ ascii / binary – Chế độ truyền file
+### 🧱 Quản lý phiên
 
-+ status – Xem trạng thái kết nối
+* `ascii`, `binary`, `status`, `passive`, `open`, `close`, `quit`, `help`
 
-+ passive – Bật/tắt chế độ passive
+---
 
-+ open, close, quit, help
+# Hướng dẫn cài đặt ClamAV trên Windows
 
+![ClamAV Logo](https://www.clamav.net/assets/clamav-trademark.png)
+
+## Giới thiệu
+
+ClamAV là công cụ chống virus mã nguồn mở, đa nền tảng.
+
+## PHẦN 1: CÀI ĐẶT CLAMSCAN
+
+### Bước 1: Tải ClamAV
+
+* Tải `clamav-1.4.3.win.x64.zip`
+
+### Bước 2: Giải nén
+
+* Vào thư mục cài: `C:\ClamAV\clamav-1.4.3.win.x64`
+
+### Bước 3: Cấu hình
+
+* Copy file `clamd.conf.sample`, `freshclam.conf.sample`
+* Bỏ comment `Example`
+
+### Bước 4: Cập nhật database
+
+```sh
+freshclam.exe
+```
+
+---
+
+## PHẦN 2: CLAMDSCAN (DAEMON)
+
+### So sánh ClamScan vs ClamD
+
+| Tính năng           | ClamScan   | ClamD        |
+| ------------------- | ---------- | ------------ |
+| Thời gian khởi động | 10–60 giây | 0.1–0.5 giây |
+| Tài nguyên          | Cao        | Thấp         |
+| Hiệu suất           | Chậm       | Nhanh        |
+
+### Bước 1: Cấu hình `clamd.conf`
+
+* `TCPSocket 3310`, `TCPAddr 127.0.0.1`
+* `LogFile`, `LogTime`, `DatabaseDirectory`
+* Bỏ comment (#) trước các dòng quan trọng
+
+### Bước 2: Chạy daemon
+
+```sh
+clamd.exe --config-file="clamd.conf"
+```
+
+* Chờ `Self checking every 600 seconds` xuất hiện → OK
