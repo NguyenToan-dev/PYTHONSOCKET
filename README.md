@@ -37,7 +37,7 @@ Dự án mô phỏng hệ thống truyền file an toàn, nơi mọi file cần 
 
 ### 3. FTP Server
 
-* Dùng phần mềm như FileZilla Server.
+* Dùng phần mềm FileZilla Server.
 * Chỉ nhận file nếu đã qua kiểm duyệt từ ClamAVAgent.
 
 ---
