@@ -62,21 +62,14 @@ ClamAV là công cụ chống virus mã nguồn mở, đa nền tảng. Hướng
 
 ##### Bước 2: Cài đặt
 
-1. Giải nén file:
-
-```sh
-unzip clamav-1.4.3.win.x64.zip -d C:\ClamAV
-```
-
+1. Giải nén file vào nơi dễ nhớ (giả sử C:\ClamAV\clamav-1.4.3.win.x64):
+- unzip clamav-1.4.3.win.x64.zip 
 2. Di chuyển vào thư mục cài đặt:
-
-```sh
-cd C:\ClamAV\clamav-1.4.3.win.x64
-```
-
+- cd C:\ClamAV\clamav-1.4.3.win.x64
+  
 ##### Bước 3: Cấu hình
 
-1. Sao chép file cấu hình mẫu từ `conf_examples` sang thư mục chính.
+1. Sao chép file cấu hình mẫu từ thư mục `conf_examples` sang thư mục chính.
 2. Đổi tên file:
 
 ```
@@ -88,7 +81,7 @@ freshclam.conf.sample → freshclam.conf
 4. Lưu lại các thay đổi.
 
 ##### Bước 4: Cập nhật cơ sở dữ liệu
-
+- Mở cmd, gõ:
 ```sh
 cd C:\ClamAV\clamav-1.4.3.win.x64
 freshclam.exe
@@ -107,7 +100,7 @@ freshclam.exe
 | Hiệu suất           | Chậm       | Nhanh        |
 
 ##### Bước 1: Cấu hình `clamd.conf`
-
+- Mở file clamd.conf trong C:\ClamAV\clamav-1.4.3.win.x64:
 1. Kết nối TCP:
 
 ```
@@ -140,7 +133,7 @@ ScanSWF no
 > Đảm bảo không còn dấu `#` comment trước các dòng trên.
 
 ##### Bước 2: Cài đặt daemon
-
+- Mở cmd, gõ:
 ```sh
 cd C:\ClamAV\clamav-1.4.3.win.x64
 clamd.exe --config-file="clamd.conf"
@@ -148,20 +141,38 @@ clamd.exe --config-file="clamd.conf"
 
 Chạy đến khi xuất hiện: `Self checking every 600 seconds` là thành công.
 
-#### PHẦN 3: CHẠY CODE
+#### PHẦN 3: CÀI ĐẶT Filezilla Server
+##### Bước 1: Tải FileZilla Server
+1. Truy cập trang chính thức: https://filezilla-project.org/download.php?type=server
+2. Nhấn nút Download FileZilla Server phù hợp với hệ điều hành (thường là Windows 64-bit).
+3. Chạy file .exe để bắt đầu cài đặt.
+##### Bước 2: Cài đặt FileZilla Server
+- Trong giao diện setup, nhấn:
+1. I Agree
+2. Next -> Next
+3. Để listening port như vậy, gõ mật khẩu bạn muốn (khuyến khích mật khẩu mạnh) -> Next -> Install -> Ok
+4. Sau khi cài xong -> Close -> Connect to server -> Gõ lại password (chọn save the password) -> Yes
+- Trong giao diện Administration interface, góc trái trên cùng màn hình:
+1. Chọn server -> Configure...
+2. Trong Rights Management, chọn Users -> OK
+3. Trong giao diện Rights Management/Users, chọn Add -> đặt tên cho users
+4. Trong ô chữ nhật Mount points: Đặt tên cho Virtual path ví dụ : /test (phải bắt đầu bằng /)
+5. Tiếp tục, Paste đường dẫn tuỳ thích trong máy tính để làm đường dẫn cho server trong ô Native path, ví dụ : C:\Users\tn421\Downloads\newfolder
+6. 
+## 🚀 Cách chạy hệ thống
 
 1. Mở 1 terminal:
-
+- cd đường_dẫn_tới_clamav_agent.py trong project
+- gõ:
 ```sh
-cd đường_dẫn_tới_clamav_agent.py
 python clamav_agent.py
 ```
 
-2. Mở 1 terminal khác:
-
+2. Mở 1 terminal khác để chạy chương trình:
+- cd đến virtual path bạn đã set trong FileZilla
+- gõ các lệnh hướng dẫn sau:
 ```sh
-cd đến virtual path bạn đã set trong FileZilla
-python ftp_client.py
+ls
 ```
 
 ---
@@ -174,28 +185,9 @@ python ftp_client.py
 
 ---
 
-## 🚀 Cách chạy hệ thống
 
-### Bước 1: Chạy ClamAVAgent
-
-```sh
-python clamav_agent.py
-```
-
-### Bước 2: Chạy server
-
-```sh
-python server.py
-```
-
-### Bước 3: Chạy ftp\_client
-
-```sh
-python ftp_client.py
-```
 
 ### Ví dụ lệnh FTP Client:
-
 * `open 127.0.0.1 21`: Kết nối tới FTP server local
 * `ls`: Liệt kê file (sau khi xác thực)
 * `cd /upload`: Vào thư mục upload
