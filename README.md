@@ -44,9 +44,7 @@ Dự án mô phỏng hệ thống truyền file an toàn, nơi mọi file cần 
 
 ## ⚙️ Cài đặt và cấu hình
 
-### 🔹 Cài đặt ClamAV trên Windows
-
-![ClamAV Logo](https://www.clamav.net/assets/clamav-trademark.png)
+### 🔹 <img src="https://www.clamav.net/assets/clamav-trademark.png" alt="ClamAV Logo" width="20"/> Cài đặt ClamAV trên Windows
 
 #### Giới thiệu
 
