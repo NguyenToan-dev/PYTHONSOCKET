@@ -37,7 +37,7 @@ Dự án mô phỏng hệ thống truyền file an toàn, nơi mọi file cần 
 
 ### 3. FTP Server
 
-* Dùng phần mềm FileZilla Server.
+* Dùng phần mềm như FileZilla Server.
 * Chỉ nhận file nếu đã qua kiểm duyệt từ ClamAVAgent.
 
 ---
@@ -46,41 +46,133 @@ Dự án mô phỏng hệ thống truyền file an toàn, nơi mọi file cần 
 
 ### 🔹 Cài đặt ClamAV trên Windows
 
-1. Truy cập trang:
-   👉 [https://www.clamav.net/downloads](https://www.clamav.net/downloads)
+![ClamAV Logo](https://www.clamav.net/assets/clamav-trademark.png)
 
-2. Tải file `.zip` (VD: `clamav-1.4.3.win.x64.zip`)
+#### Giới thiệu
 
-3. Giải nén vào thư mục (VD: `D:\ClamAV`)
+ClamAV là công cụ chống virus mã nguồn mở, đa nền tảng. Hướng dẫn này sẽ giúp bạn cài đặt ClamAV trên Windows với hai chế độ:
 
-4. **Cập nhật PATH**:
+* ClamScan: Chế độ quét cơ bản
+* ClamDScan: Chế độ daemon cho tốc độ quét nhanh hơn
 
-* Mở **System Environment Variables**
-* Thêm `D:\ClamAV` vào `Path`
+#### PHẦN 1: CÀI ĐẶT CLAMSCAN
 
-5. **Kiểm tra**:
+##### Bước 1: Tải về ClamAV
+
+1. Truy cập trang chủ: [https://www.clamav.net/downloads](https://www.clamav.net/downloads)
+2. Chọn **Windows** → Tải file `clamav-1.4.3.win.x64.zip`
+
+##### Bước 2: Cài đặt
+
+1. Giải nén file:
 
 ```sh
-clamscan --version
+unzip clamav-1.4.3.win.x64.zip -d C:\ClamAV
 ```
 
-### 🛠️🔹 Tải ClamAV Database
+2. Di chuyển vào thư mục cài đặt:
 
-Tạo thư mục database và tải 3 file:
+```sh
+cd C:\ClamAV\clamav-1.4.3.win.x64
+```
 
-* [`main.cvd`](https://database.clamav.net/main.cvd)
-* [`daily.cvd`](https://database.clamav.net/daily.cvd)
-* [`bytecode.cvd`](https://database.clamav.net/bytecode.cvd)
+##### Bước 3: Cấu hình
 
-> Gợi ý: Dùng `--datadir` nếu ClamAV không tìm thấy database.
+1. Sao chép file cấu hình mẫu từ `conf_examples` sang thư mục chính.
+2. Đổi tên file:
+
+```
+clamd.conf.sample → clamd.conf
+freshclam.conf.sample → freshclam.conf
+```
+
+3. Mở file và xóa dòng chứa `Example` (thường là dòng số 8).
+4. Lưu lại các thay đổi.
+
+##### Bước 4: Cập nhật cơ sở dữ liệu
+
+```sh
+cd C:\ClamAV\clamav-1.4.3.win.x64
+freshclam.exe
+```
+
+(Chờ quá trình tải database hoàn tất)
+
+#### PHẦN 2: CÀI ĐẶT CLAMDSCAN (DAEMON)
+
+##### So sánh ClamScan và ClamD
+
+| Tính năng           | ClamScan   | ClamD        |
+| ------------------- | ---------- | ------------ |
+| Thời gian khởi động | 10–60 giây | 0.1–0.5 giây |
+| Tài nguyên          | Cao        | Thấp         |
+| Hiệu suất           | Chậm       | Nhanh        |
+
+##### Bước 1: Cấu hình `clamd.conf`
+
+1. Kết nối TCP:
+
+```
+TCPSocket 3310
+TCPAddr 127.0.0.1
+```
+
+2. Đường dẫn log:
+
+```
+LogFile "C:\ClamAV\clamav-1.4.3.win.x64\clamd.log"
+LogTime yes
+LogFileMaxSize 5M
+```
+
+3. Thư mục database:
+
+```
+DatabaseDirectory "C:\ClamAV\clamav-1.4.3.win.x64\database"
+```
+
+4. Tối ưu hiệu năng (tuỳ chọn):
+
+```
+ScanOLE2 no
+ScanPDF no
+ScanSWF no
+```
+
+> Đảm bảo không còn dấu `#` comment trước các dòng trên.
+
+##### Bước 2: Cài đặt daemon
+
+```sh
+cd C:\ClamAV\clamav-1.4.3.win.x64
+clamd.exe --config-file="clamd.conf"
+```
+
+Chạy đến khi xuất hiện: `Self checking every 600 seconds` là thành công.
+
+#### PHẦN 3: CHẠY CODE
+
+1. Mở 1 terminal:
+
+```sh
+cd đường_dẫn_tới_clamav_agent.py
+python clamav_agent.py
+```
+
+2. Mở 1 terminal khác:
+
+```sh
+cd đến virtual path bạn đã set trong FileZilla
+python ftp_client.py
+```
 
 ---
 
 ### 🔹 FTP Server
 
-* Cài FileZilla Server
-* Tạo user, cấp quyền
-* Kích hoạt Passive mode (nếu cần)
+* Cài đặt FileZilla Server.
+* Tạo user và cấp quyền thư mục.
+* Kích hoạt chế độ Passive nếu cần (mport).
 
 ---
 
@@ -104,17 +196,20 @@ python server.py
 python ftp_client.py
 ```
 
-### Lệnh mẫu:
+### Ví dụ lệnh FTP Client:
 
-* `open 127.0.0.1 21`
-* `put file.pdf`
-* `mput *.txt`
-* `get report.docx`
-* `status`, `quit`
+* `open 127.0.0.1 21`: Kết nối tới FTP server local
+* `ls`: Liệt kê file (sau khi xác thực)
+* `cd /upload`: Vào thư mục upload
+* `put file.pdf`: Gửi file tới ClamAVAgent để quét trước khi upload
+* `mput *.txt`: Quét từng file `.txt`, chỉ upload file sạch
+* `get report.docx`: Tải file xuống
+* `status`: Kiểm tra trạng thái
+* `quit`: Thoát
 
 ---
 
-## 📀 Sơ đồ kiến trúc hệ thống
+## 📐 Sơ đồ kiến trúc hệ thống
 
 ```plaintext
 +------------------+        +---------------------+        +--------------------+
@@ -134,73 +229,26 @@ python ftp_client.py
 
 ---
 
-## 📜 Lệnh được hỗ trợ
+## 📜 Các lệnh được hỗ trợ
 
 ### 📁 File và thư mục
 
-* `ls`, `cd`, `pwd`, `mkdir`, `rmdir`, `delete`, `rename`
+* `ls` – Liệt kê file/thư mục trên server
+* `cd` – Đổi thư mục
+* `pwd` – Hiển thị thư mục hiện tại
+* `mkdir`, `rmdir` – Tạo/Xoá thư mục
+* `delete` – Xoá file
+* `rename` – Đổi tên file
 
-### ⬇️⬆️ Truyền file
+### ⬇️⬆️ Tải lên / Tải xuống
 
-* `put`, `mput`, `get`, `mget`, `prompt`
+* `put`, `mput` – Upload 1 hay nhiều file (phải quét virus)
+* `get`, `mget` – Tải file từ server
+* `prompt` – Bật/tắt xác nhận khi dùng mget, mput
 
-### 🧱 Quản lý phiên
+### 🧭 Quản lý phiên
 
-* `ascii`, `binary`, `status`, `passive`, `open`, `close`, `quit`, `help`
-
----
-
-# Hướng dẫn cài đặt ClamAV trên Windows
-
-![ClamAV Logo](https://www.clamav.net/assets/clamav-trademark.png)
-
-## Giới thiệu
-
-ClamAV là công cụ chống virus mã nguồn mở, đa nền tảng.
-
-## PHẦN 1: CÀI ĐẶT CLAMSCAN
-
-### Bước 1: Tải ClamAV
-
-* Tải `clamav-1.4.3.win.x64.zip`
-
-### Bước 2: Giải nén
-
-* Vào thư mục cài: `C:\ClamAV\clamav-1.4.3.win.x64`
-
-### Bước 3: Cấu hình
-
-* Copy file `clamd.conf.sample`, `freshclam.conf.sample`
-* Bỏ comment `Example`
-
-### Bước 4: Cập nhật database
-
-```sh
-freshclam.exe
-```
-
----
-
-## PHẦN 2: CLAMDSCAN (DAEMON)
-
-### So sánh ClamScan vs ClamD
-
-| Tính năng           | ClamScan   | ClamD        |
-| ------------------- | ---------- | ------------ |
-| Thời gian khởi động | 10–60 giây | 0.1–0.5 giây |
-| Tài nguyên          | Cao        | Thấp         |
-| Hiệu suất           | Chậm       | Nhanh        |
-
-### Bước 1: Cấu hình `clamd.conf`
-
-* `TCPSocket 3310`, `TCPAddr 127.0.0.1`
-* `LogFile`, `LogTime`, `DatabaseDirectory`
-* Bỏ comment (#) trước các dòng quan trọng
-
-### Bước 2: Chạy daemon
-
-```sh
-clamd.exe --config-file="clamd.conf"
-```
-
-* Chờ `Self checking every 600 seconds` xuất hiện → OK
+* `ascii`, `binary` – Chế độ truyền file
+* `status` – Xem trạng thái kết nối
+* `passive` – Bật/tắt chế độ passive
+* `open`, `close`, `quit`, `help`
