@@ -42,7 +42,7 @@ Dự án mô phỏng hệ thống truyền file an toàn, nơi mọi file cần 
 
 ---
 
-## 🏗️ Cài đặt và cấu hình
+## ⚙️ Cài đặt và cấu hình
 
 ### 🔹 Cài đặt ClamAV trên Windows
 
