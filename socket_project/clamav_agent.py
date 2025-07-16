@@ -8,7 +8,7 @@ PORT = 9001
 BUFFER_SIZE = 4096
 SCAN_DIR = 'clamav_temp'
 
-# Đường dẫn đến clamdscan và daemon clamd
+# Đường dẫn đến clamdscan và daemon clamd ->NHỚ SỬA LẠI
 CLAMDSCAN_PATH = r"C:\Users\tn421\Downloads\clamav-1.4.3.win.x64\clamav-1.4.3.win.x64\clamdscan.exe"
 CLAMD_PATH = r"C:\Users\tn421\Downloads\clamav-1.4.3.win.x64\clamav-1.4.3.win.x64\clamd.exe"
 CLAMD_CONF = r"C:\Users\tn421\Downloads\clamav-1.4.3.win.x64\clamav-1.4.3.win.x64\clamd.conf"
