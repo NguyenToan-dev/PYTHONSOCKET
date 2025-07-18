@@ -1,90 +1,96 @@
-#main.py
-from ftp_client import (
-    list_files,
-    change_directory,
-    make_directory,
-    remove_directory_recursive,
-    delete_file,
-    rename_file,
-    print_working_directory,
-    download_file,
-    upload_file,
-    mget_files,
-    mput_files,
-    toggle_prompt,
-)
-
+from client.ftp_client import FTPSession
+import shlex
 def main():
-    print("=== Chào mừng đến với FTP Client ===")
+    print("=== 📡 FTP CLIENT (socket thuần + TLS) ===")
+    ftp = FTPSession()
+    connected = False
+
     while True:
-        cmd = input("ftp> ").strip()
-        if not cmd:
-            continue
-
-        parts = cmd.split()
-        command = parts[0].lower()
-        args = parts[1:]
-
         try:
-            if command == "ls":
-                list_files()
-            elif command == "pwd":
-                print_working_directory()
-            elif command == "cd":
-                if len(args) != 1:
-                    print("⚠️ Dùng: cd <thư mục>")
-                    continue
-                change_directory(args[0])
-                print(f"✅ Đã chuyển vào thư mục '{args[0]}'")
-            elif command == "mkdir":
-                if len(args) != 1:
-                    print("⚠️ Dùng: mkdir <tên thư mục>")
-                    continue
-                make_directory(args[0])
-            elif command == "rmdir":
-                if len(args) != 1:
-                    print("⚠️ Dùng: rmdir <tên thư mục>")
-                    continue
-                remove_directory_recursive(args[0])
-            elif command == "delete":
-                if len(args) != 1:
-                    print("⚠️ Dùng: delete <tên file>")
-                    continue
-                delete_file(args[0])
-            elif command == "rename":
-                if len(args) != 2:
-                    print("⚠️ Dùng: rename <tên cũ> <tên mới>")
-                    continue
-                rename_file(args[0], args[1])
-            elif command in ("get", "recv"):
-                if len(args) != 1:
-                    print("⚠️ Dùng: get <tên file>")
-                    continue
-                download_file(args[0])
-            elif command == "put":
-                if len(args) != 1:
-                    print("⚠️ Dùng: put <đường dẫn file local>")
-                    continue
-                upload_file(args[0])
-            elif command == "mget":
-                if len(args) != 1:
-                    print("⚠️ Dùng: mget <mẫu>")
-                    continue
-                mget_files(args[0])
-            elif command == "mput":
-                if len(args) != 1:
-                    print("⚠️ Dùng: mput <mẫu>")
-                    continue
-                mput_files(args[0])
-            elif command == "prompt":
-                toggle_prompt()
-            elif command in ("quit", "exit", "bye"):
-                print("👋 Tạm biệt!")
+            line = input("ftp> ").strip()
+            if not line:
+                continue
+
+            parts = line.split()
+            cmd = parts[0].lower()
+            args = parts[1:]
+
+            if cmd == "open":
+                ftp.connect_ftp()
+                connected = True
+            elif cmd == "close":
+                if connected:
+                    ftp.close()
+                    connected = False
+                else:
+                    print("⚠️ Bạn chưa kết nối.")
+            elif cmd in ("quit", "exit", "bye"):
+                if connected:
+                    ftp.close()
+                print("👋 Đã thoát FTP client.")
                 break
+            elif cmd == "status":
+                if connected:
+                    ftp.status()
+                else:
+                    print("⚠️ Vui lòng kết nối trước (dùng 'open').")
+            elif cmd == "passive":
+                if connected:
+                    ftp.passive()
+                else:
+                    print("⚠️ Vui lòng kết nối trước (dùng 'open').")
+            elif cmd in ("help", "?"):
+                ftp.help()
+            elif not connected:
+                print("⚠️ Vui lòng dùng lệnh 'open' để kết nối trước.")
+            elif cmd in ("ls", "dir"):
+                ftp.list()
+            elif cmd == "pwd":
+                ftp.pwd()
+            elif cmd =="prompt":
+                ftp.prompt()
+            elif cmd == "cd" and args:
+                path = ' '.join(args)  # Ghép lại các phần bị tách bởi dấu cách
+                ftp.cwd(path)
+            elif cmd == "mkdir" and args:
+                path= ' '.join(args)
+                ftp.mkd(path)
+            elif cmd == "rmdir" and args:
+                path= ' '.join(args)
+                ftp.rmd(path)
+            elif line.startswith("rename ") or line.startswith("rn "):
+                try:
+                    parts = shlex.split(line)
+                except ValueError as e:
+                    print(f"❌ Lỗi cú pháp rename: {e}")
+                    continue
+
+                cmd = parts[0].lower()
+                args = parts[1:]
+
+                if len(args) != 2:
+                    print("❌ Cú pháp đúng: rename \"tên cũ\" \"tên mới\"")
+                else:
+                    ftp.rn(args[0], args[1])
+                continue  # quan trọng: bỏ qua xử lý lệnh thông thường bên dưới
+            elif cmd == "delete" and args:
+                path = ' '.join(args)
+                ftp.delete_file(path)
+            elif cmd == "get" and args:
+                path = ' '.join(args)
+                ftp.download_ftp(path)
+            elif cmd == "put" and args:
+                path = ' '.join(args)
+                ftp.upload_ftp(path)
+            elif cmd == "mget" and len(args) == 1:
+                ftp.mget(args[0])
+            elif cmd == "mput" and len(args) == 1:
+                ftp.mput(args[0])
             else:
-                print("⚠️ Lệnh không hợp lệ. Dùng ls, cd <thư mục>, pwd, mkdir <tên>, rmdir <tên>, delete <file>, rename <cũ> <mới>, get <file>, put <file>, mget <pattern>, mput <pattern>, prompt, quit")
+                print("⚠️ Lệnh không hợp lệ. Dùng 'help' để xem danh sách lệnh.")
         except Exception as e:
-            print(f"❌ Lỗi khi thực hiện lệnh: {e}")
+            print(f"❌ Lỗi: {e}")
 
 if __name__ == "__main__":
     main()
+
