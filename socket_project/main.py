@@ -1,7 +1,9 @@
-from client.ftp_client import FTPSession
+from ftp_client import FTPSession
 import shlex
+import os
+
 def main():
-    print("=== 📡 FTP CLIENT (socket thuần + TLS) ===")
+    print("=== 📡 FTP CLIENT (Plain FTP + ClamAV) ===")
     ftp = FTPSession()
     connected = False
 
@@ -11,7 +13,16 @@ def main():
             if not line:
                 continue
 
-            parts = line.split()
+            # Sử dụng shlex.split để xử lý đường dẫn có khoảng trắng
+            try:
+                parts = shlex.split(line)
+            except ValueError as e:
+                print(f"❌ Lỗi cú pháp: {e}")
+                continue
+
+            if not parts:
+                continue
+
             cmd = parts[0].lower()
             args = parts[1:]
 
@@ -30,62 +41,63 @@ def main():
                 print("👋 Đã thoát FTP client.")
                 break
             elif cmd == "status":
-                if connected:
-                    ftp.status()
-                else:
-                    print("⚠️ Vui lòng kết nối trước (dùng 'open').")
+                ftp.status()
             elif cmd == "passive":
-                if connected:
-                    ftp.passive()
+                if args:
+                    ftp.passive(args[0])
                 else:
-                    print("⚠️ Vui lòng kết nối trước (dùng 'open').")
+                    ftp.passive()
             elif cmd in ("help", "?"):
                 ftp.help()
             elif not connected:
                 print("⚠️ Vui lòng dùng lệnh 'open' để kết nối trước.")
             elif cmd in ("ls", "dir"):
-                ftp.list()
+                if args:
+                    ftp.list(' '.join(args))
+                else:
+                    ftp.list()
             elif cmd == "pwd":
                 ftp.pwd()
-            elif cmd =="prompt":
-                ftp.prompt()
-            elif cmd == "cd" and args:
-                path = ' '.join(args)  # Ghép lại các phần bị tách bởi dấu cách
-                ftp.cwd(path)
-            elif cmd == "mkdir" and args:
-                path= ' '.join(args)
-                ftp.mkd(path)
-            elif cmd == "rmdir" and args:
-                path= ' '.join(args)
-                ftp.rmd(path)
-            elif line.startswith("rename ") or line.startswith("rn "):
-                try:
-                    parts = shlex.split(line)
-                except ValueError as e:
-                    print(f"❌ Lỗi cú pháp rename: {e}")
-                    continue
-
-                cmd = parts[0].lower()
-                args = parts[1:]
-
-                if len(args) != 2:
-                    print("❌ Cú pháp đúng: rename \"tên cũ\" \"tên mới\"")
+            elif cmd == "prompt":
+                if args:
+                    ftp.prompt(args[0])
                 else:
-                    ftp.rn(args[0], args[1])
-                continue  # quan trọng: bỏ qua xử lý lệnh thông thường bên dưới
+                    ftp.prompt()
+            elif cmd == "cd" and args:
+                path = ' '.join(args)
+                ftp.cwd(path)
+            elif cmd == "lcd" and args:
+                path = ' '.join(args)
+                ftp.lcd(path)
+            elif cmd == "mkdir" and args:
+                path = ' '.join(args)
+                ftp.mkdir(path)
+            elif cmd == "rmdir" and args:
+                path = ' '.join(args)
+                ftp.rmdir(path)
             elif cmd == "delete" and args:
                 path = ' '.join(args)
-                ftp.delete_file(path)
+                ftp.delete(path)
+            elif cmd == "rename" and len(args) == 2:
+                ftp.rename(args[0], args[1])
             elif cmd == "get" and args:
-                path = ' '.join(args)
-                ftp.download_ftp(path)
+                remote_file = args[0]
+                local_file = args[1] if len(args) > 1 else None
+                ftp.download_ftp(remote_file, local_file)
             elif cmd == "put" and args:
-                path = ' '.join(args)
-                ftp.upload_ftp(path)
-            elif cmd == "mget" and len(args) == 1:
-                ftp.mget(args[0])
-            elif cmd == "mput" and len(args) == 1:
-                ftp.mput(args[0])
+                local_file = args[0]
+                remote_file = args[1] if len(args) > 1 else None
+                ftp.upload_ftp(local_file, remote_file)
+            elif cmd == "mget" and args:
+                pattern = ' '.join(args)
+                ftp.mget(pattern)
+            elif cmd == "mput" and args:
+                pattern = ' '.join(args)
+                ftp.mput(pattern)
+            elif cmd == "ascii":
+                ftp.set_transfer_mode("ascii")
+            elif cmd == "binary":
+                ftp.set_transfer_mode("binary")
             else:
                 print("⚠️ Lệnh không hợp lệ. Dùng 'help' để xem danh sách lệnh.")
         except Exception as e:
@@ -93,4 +105,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
