@@ -262,35 +262,35 @@ ftp> cd /new
 <<< 257 "/new" is current directory.
 📂 Thư mục hiện tại: /new
 ```
-* `pwd`
+* `pwd` -> đầu ra:
 ```sh
 ftp> pwd
 >>> PWD
 <<< 257 "/new" is current directory.
 📂 Thư mục hiện tại: /new
  ```
-* `mkdir <dir>`
+* `mkdir <dir>` -> đầu ra:
 ```sh
 ftp> mkdir new
 >>> MKD new
 <<< 257 "/new/new" created successfully.
 ✅ Đã tạo thư mục: new
 ```
-* `rmdir <dir>`
+* `rmdir <dir>` -> đầu ra:
 ```sh
 ftp> rmdir new
 >>> RMD new
 <<< 250 Directory deleted successfully.
 ✅ Đã xóa thư mục: new
 ```
-* `delete <file>`
+* `delete <file>` -> đầu ra:
 ```sh
 ftp> delete LÝ THUYẾT ĐẠI SỐ TUYẾN TÍNH.docx
 >>> DELE LÝ THUYẾT ĐẠI SỐ TUYẾN TÍNH.docx
 <<< 250 File deleted successfully.
 ✅ Đã xóa file: LÝ THUYẾT ĐẠI SỐ TUYẾN TÍNH.docx
 ```
-* `rename <o> <n>`
+* `rename <o> <n>` -> đầu ra:
 ```sh
 ftp> rename demo.txt test.txt
 >>> RNFR demo.txt
@@ -299,7 +299,7 @@ ftp> rename demo.txt test.txt
 <<< 250 File or directory renamed successfully.
 ✅ Đã đổi tên demo.txt → test.txt
 ```
-* `get <file>`
+* `get <file>` -> đầu ra:
 ```sh
 ftp> get test.txt
 >>> PASV
@@ -310,7 +310,7 @@ ftp> get test.txt
 ✅ Tải thành công: test.txt → D:\PYTHONSOCKET\socket_project\test.txt
 📊 Kích thước: 14 bytes | Thời gian: 0.00s | Tốc độ: 17.31 KB/s
 ```
-* `put <file>`
+* `put <file>` -> đầu ra:
 ```sh
 ftp> put hello.txt
 🔍 Đang quét virus: hello.txt
@@ -322,7 +322,7 @@ ftp> put hello.txt
 ✅ Upload thành công: D:\PYTHONSOCKET\socket_project\hello.txt → hello.txt
 📊 Kích thước: 9 bytes | Thời gian: 0.00s | Tốc độ: 10.62 KB/s
 ```
-* `mget <pat>`
+* `mget <pat>` -> đầu ra:
 ```sh
 ftp> mget *.txt
 >>> PASV
@@ -352,7 +352,7 @@ Bạn có muốn tải tất cả? (y/n): y
 📊 Kích thước: 14 bytes | Thời gian: 0.00s | Tốc độ: 17.86 KB/s
 ✅ Đã tải thành công 2/2 file
 ```
-* `mput <pat>`
+* `mput <pat>` -> đầu ra:
 ```sh
 ftp> mput *.txt
 🔍 Tìm thấy 3 file:
@@ -389,31 +389,31 @@ Bạn có muốn upload tất cả? (y/n): y
 📊 Kích thước: 14 bytes | Thời gian: 0.00s | Tốc độ: 16.91 KB/s
 ✅ Đã upload thành công 3/3 file
 ```
-* `ascii`
+* `ascii` -> đầu ra:
 ```sh
 ftp> ascii
 >>> TYPE A
 <<< 200 Type set to A
 ✅ Đã chuyển sang chế độ ASCII
 ```
-* `binary`
+* `binary` -> đầu ra:
 ```sh
 ftp> binary
 >>> TYPE B
 <<< 501 Unsupported type. Supported types are I, I N, A, A N and L 8.
 ✅ Đã chuyển sang chế độ BINARY
 ```
-* `passive`
+* `passive` -> đầu ra:
 ```sh
 ftp> passive
 ✅ Đã TẮT chế độ passive
 ```
-* `prompt`
+* `prompt` -> đầu ra:
 ```sh
 ftp> prompt
 ✅ Đã TẮT chế độ xác nhận
 ```
-* `status`
+* `status` -> đầu ra:
 ```sh
 ftp> status
 🌐 Đã kết nối: ✅
@@ -425,7 +425,7 @@ ftp> status
 📡 Địa chỉ server: 127.0.0.1:21
 👤 Người dùng: ftpuser
 ```
-* `help`
+* `help` -> đầu ra:
 ```sh
 ftp> help
         =================== TRỢ GIÚP FTP CLIENT ===================
