@@ -180,11 +180,40 @@ python clamav_agent.py
 
 2. Mở 1 terminal khác để chạy chương trình:
 - cd đến virtual path bạn đã set trong FileZilla
-- gõ các lệnh hướng dẫn sau:
+- gõ các lệnh theo hướng dẫn sau:
 ```sh
-ls
+        Kết nối:
+          open       - Kết nối tới FTP server
+          close      - Đóng kết nối
+          quit/bye   - Thoát chương trình
+        
+        Thư mục & File:
+          ls [path]  - Liệt kê nội dung thư mục
+          cd <path>  - Thay đổi thư mục trên server
+          lcd <path> - Thay đổi thư mục cục bộ
+          pwd        - Xem thư mục hiện tại trên server
+          mkdir <dir>- Tạo thư mục mới
+          rmdir <dir>- Xóa thư mục
+          delete <f> - Xóa file
+          rename <o> <n> - Đổi tên file/thư mục
+        
+        Truyền file:
+          get <file> - Tải file từ server
+          put <file> - Upload file lên server (có quét virus)
+          mget <pat> - Tải nhiều file (vd: *.txt)
+          mput <pat> - Upload nhiều file
+        
+        Cài đặt:
+          ascii      - Chuyển sang chế độ truyền văn bản
+          binary     - Chuyển sang chế độ truyền nhị phân
+          passive [on|off] - Bật/tắt chế độ passive
+          prompt [on|off] - Bật/tắt xác nhận khi mget/mput
+          status     - Xem trạng thái hiện tại
+        
+        Khác:
+          help/?     - Hiển thị trợ giúp này
 ```
-
+3. Trong file config.py sửa lại FTP_PASS và FTP_USER theo tên tài khoản và mật khẩu bạn đã set.
 ---
 
 ### 🔹 FTP Server
@@ -197,16 +226,243 @@ ls
 
 
 
-### Ví dụ lệnh FTP Client:
-* `open 127.0.0.1 21`: Kết nối tới FTP server local
-* `ls`: Liệt kê file (sau khi xác thực)
-* `cd /upload`: Vào thư mục upload
-* `put file.pdf`: Gửi file tới ClamAVAgent để quét trước khi upload
-* `mput *.txt`: Quét từng file `.txt`, chỉ upload file sạch
-* `get report.docx`: Tải file xuống
-* `status`: Kiểm tra trạng thái
-* `quit`: Thoát
+### Ví dụ các lệnh mẫu và đầu ra mong đợi:
+* `open` -> đầu ra:
+```sh
+ftp> open
+<<< 220-FileZilla Server 1.10.3
+<<< 220 Please visit https://filezilla-project.org/
+220 Please visit https://filezilla-project.org/
+>>> USER ftpuser
+<<< 331 Please, specify the password.
+>>> PASS NguyenToan2k6@123
+<<< 230 Login successful.
+>>> PWD
+<<< 257 "/" is current directory.
+📂 Thư mục hiện tại: /
+```
+* `ls` -> đầu ra:
+```sh
+ftp> ls
+>>> PASV
+<<< 227 Entering Passive Mode (127,0,0,1,192,6)
+>>> LIST
+<<< 150 Starting data transfer.
+=== DANH SÁCH ===
+drwxrwxrwx 1 ftp ftp               0 Aug 01 01:38 new
 
+<<< 226 Operation successful
+```
+* `cd <path>` -> đầu ra:
+```sh
+ftp> cd /new
+>>> CWD /new
+<<< 250 CWD command successful
+>>> PWD
+<<< 257 "/new" is current directory.
+📂 Thư mục hiện tại: /new
+```
+* `pwd`
+```sh
+ftp> pwd
+>>> PWD
+<<< 257 "/new" is current directory.
+📂 Thư mục hiện tại: /new
+ ```
+* `mkdir <dir>`
+```sh
+ftp> mkdir new
+>>> MKD new
+<<< 257 "/new/new" created successfully.
+✅ Đã tạo thư mục: new
+```
+* `rmdir <dir>`
+```sh
+ftp> rmdir new
+>>> RMD new
+<<< 250 Directory deleted successfully.
+✅ Đã xóa thư mục: new
+```
+* `delete <file>`
+```sh
+ftp> delete LÝ THUYẾT ĐẠI SỐ TUYẾN TÍNH.docx
+>>> DELE LÝ THUYẾT ĐẠI SỐ TUYẾN TÍNH.docx
+<<< 250 File deleted successfully.
+✅ Đã xóa file: LÝ THUYẾT ĐẠI SỐ TUYẾN TÍNH.docx
+```
+* `rename <o> <n>`
+```sh
+ftp> rename demo.txt test.txt
+>>> RNFR demo.txt
+<<< 350 File exists, ready for destination name.
+>>> RNTO test.txt
+<<< 250 File or directory renamed successfully.
+✅ Đã đổi tên demo.txt → test.txt
+```
+* `get <file>`
+```sh
+ftp> get test.txt
+>>> PASV
+<<< 227 Entering Passive Mode (127,0,0,1,192,4)
+>>> RETR test.txt
+<<< 150 Starting data transfer.
+<<< 226 Operation successful
+✅ Tải thành công: test.txt → D:\PYTHONSOCKET\socket_project\test.txt
+📊 Kích thước: 14 bytes | Thời gian: 0.00s | Tốc độ: 17.31 KB/s
+```
+* `put <file>`
+```sh
+ftp> put hello.txt
+🔍 Đang quét virus: hello.txt
+>>> PASV
+<<< 227 Entering Passive Mode (127,0,0,1,192,5)
+>>> STOR hello.txt
+<<< 150 Starting data transfer.
+<<< 226 Operation successful
+✅ Upload thành công: D:\PYTHONSOCKET\socket_project\hello.txt → hello.txt
+📊 Kích thước: 9 bytes | Thời gian: 0.00s | Tốc độ: 10.62 KB/s
+```
+* `mget <pat>`
+```sh
+ftp> mget *.txt
+>>> PASV
+<<< 227 Entering Passive Mode (127,0,0,1,192,6)
+>>> NLST
+<<< 150 Starting data transfer.
+<<< 226 Operation successful
+🔍 Tìm thấy 2 file:
+  1. hello.txt
+  2. test.txt
+Bạn có muốn tải tất cả? (y/n): y
+⬇️  Đang tải: hello.txt
+>>> PASV
+<<< 227 Entering Passive Mode (127,0,0,1,192,2)
+>>> RETR hello.txt
+<<< 150 Starting data transfer.
+<<< 226 Operation successful
+✅ Tải thành công: hello.txt → D:\PYTHONSOCKET\socket_project\hello.txt
+📊 Kích thước: 9 bytes | Thời gian: 0.00s | Tốc độ: 8.43 KB/s
+⬇️  Đang tải: test.txt
+>>> PASV
+<<< 227 Entering Passive Mode (127,0,0,1,192,7)
+>>> RETR test.txt
+<<< 150 Starting data transfer.
+<<< 226 Operation successful
+✅ Tải thành công: test.txt → D:\PYTHONSOCKET\socket_project\test.txt
+📊 Kích thước: 14 bytes | Thời gian: 0.00s | Tốc độ: 17.86 KB/s
+✅ Đã tải thành công 2/2 file
+```
+* `mput <pat>`
+```sh
+ftp> mput *.txt
+🔍 Tìm thấy 3 file:
+  1. eicar.txt
+  2. hello.txt
+  3. test.txt
+Bạn có muốn upload tất cả? (y/n): y
+⬆️  Đang upload: eicar.txt
+🔍 Đang quét virus: eicar.txt
+>>> PASV
+<<< 227 Entering Passive Mode (127,0,0,1,192,0)
+>>> STOR eicar.txt
+<<< 150 Starting data transfer.
+<<< 226 Operation successful
+✅ Upload thành công: D:\PYTHONSOCKET\socket_project\eicar.txt → eicar.txt
+📊 Kích thước: 60 bytes | Thời gian: 0.00s | Tốc độ: 79.48 KB/s
+⬆️  Đang upload: hello.txt
+🔍 Đang quét virus: hello.txt
+>>> PASV
+<<< 227 Entering Passive Mode (127,0,0,1,192,8)
+>>> STOR hello.txt
+<<< 150 Starting data transfer.
+<<< 226 Operation successful
+✅ Upload thành công: D:\PYTHONSOCKET\socket_project\hello.txt → hello.txt
+📊 Kích thước: 9 bytes | Thời gian: 0.00s | Tốc độ: 20.92 KB/s
+⬆️  Đang upload: test.txt
+🔍 Đang quét virus: test.txt
+>>> PASV
+<<< 227 Entering Passive Mode (127,0,0,1,192,1)
+>>> STOR test.txt
+<<< 150 Starting data transfer.
+<<< 226 Operation successful
+✅ Upload thành công: D:\PYTHONSOCKET\socket_project\test.txt → test.txt
+📊 Kích thước: 14 bytes | Thời gian: 0.00s | Tốc độ: 16.91 KB/s
+✅ Đã upload thành công 3/3 file
+```
+* `ascii`
+```sh
+ftp> ascii
+>>> TYPE A
+<<< 200 Type set to A
+✅ Đã chuyển sang chế độ ASCII
+```
+* `binary`
+```sh
+ftp> binary
+>>> TYPE B
+<<< 501 Unsupported type. Supported types are I, I N, A, A N and L 8.
+✅ Đã chuyển sang chế độ BINARY
+```
+* `passive`
+```sh
+ftp> passive
+✅ Đã TẮT chế độ passive
+```
+* `prompt`
+```sh
+ftp> prompt
+✅ Đã TẮT chế độ xác nhận
+```
+* `status`
+```sh
+ftp> status
+🌐 Đã kết nối: ✅
+📂 Thư mục hiện tại: /new
+💻 Thư mục cục bộ: D:\PYTHONSOCKET\socket_project
+🛁 Chế độ passive: TẮT
+📦 Chế độ truyền: BINARY
+📢 Chế độ xác nhận: TẮT
+📡 Địa chỉ server: 127.0.0.1:21
+👤 Người dùng: ftpuser
+```
+* `help`
+```sh
+ftp> help
+        =================== TRỢ GIÚP FTP CLIENT ===================
+
+        Kết nối:
+          open       - Kết nối tới FTP server
+          close      - Đóng kết nối
+          quit/bye   - Thoát chương trình
+
+        Thư mục & File:
+          ls [path]  - Liệt kê nội dung thư mục
+          cd <path>  - Thay đổi thư mục trên server
+          lcd <path> - Thay đổi thư mục cục bộ
+          pwd        - Xem thư mục hiện tại trên server
+          mkdir <dir>- Tạo thư mục mới
+          rmdir <dir>- Xóa thư mục
+          delete <f> - Xóa file
+          rename <o> <n> - Đổi tên file/thư mục
+
+        Truyền file:
+          get <file> - Tải file từ server
+          put <file> - Upload file lên server (có quét virus)
+          mget <pat> - Tải nhiều file (vd: *.txt)
+          mput <pat> - Upload nhiều file
+
+        Cài đặt:
+          ascii      - Chuyển sang chế độ truyền văn bản
+          binary     - Chuyển sang chế độ truyền nhị phân
+          passive [on|off] - Bật/tắt chế độ passive
+          prompt [on|off] - Bật/tắt xác nhận khi mget/mput
+          status     - Xem trạng thái hiện tại
+
+        Khác:
+          help/?     - Hiển thị trợ giúp này
+
+        ===========================================================
+```
 ---
 
 ## 📐 Sơ đồ kiến trúc hệ thống
