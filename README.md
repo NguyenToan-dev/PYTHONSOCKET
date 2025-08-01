@@ -158,7 +158,17 @@ Chạy đến khi xuất hiện: `Self checking every 600 seconds` là thành c�
 3. Trong giao diện Rights Management/Users, chọn Add -> đặt tên cho users
 4. Trong ô chữ nhật Mount points: Đặt tên cho Virtual path ví dụ : /test (phải bắt đầu bằng /)
 5. Tiếp tục, Paste đường dẫn tuỳ thích trong máy tính để làm đường dẫn cho server trong ô Native path, ví dụ : C:\Users\tn421\Downloads\newfolder
-6. 
+6. Trong giao diện chính chọn server -> Configure -> Server listeners ->Ở cột protocol chọn Explicit FTP over TLS and insecure plain FTP
+- Tiếp theo, set port cho Server:
+1. Mở dải port Passive trên Firewall (VD: 49152–49160)
+```sh
+netsh advfirewall firewall add rule name="FileZilla Passive Ports" dir=in action=allow protocol=TCP localport=49152-49160
+```
+- (Tùy chọn: Mở outbound nếu cần kết nối từ bên ngoài)
+```sh
+netsh advfirewall firewall add rule name="FileZilla Passive Outbound" dir=out action=allow protocol=TCP localport=49152-49160
+```
+2. 🎯 Nhớ cấu hình FileZilla Server để sử dụng dải port Passive này trong phần server -> Configure -> Protocal settings -> FTP and FTP over TLS (FTPS) -> vào Passive Mode -> chọn dải from 49152 to 49160
 ## 🚀 Cách chạy hệ thống
 
 1. Mở 1 terminal:
