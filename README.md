@@ -15,7 +15,7 @@
 
 Dự án mô phỏng hệ thống truyền file an toàn, nơi mọi file cần được quét virus bằng ClamAV trước khi được upload lên FTP Server. Hệ thống gồm:
 
-* **FTP Client**: Chương trình chính, cung cấp các lệnh FTP-like.
+* **FTP Client**: Chương trình chính, cung cấp các lệnh FTP-client.
 * **ClamAVAgent**: Dịch vụ quét virus hoạt động qua socket.
 * **FTP Server**: Máy chủ nhận file sạch để lưu trữ.
 
