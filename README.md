@@ -506,7 +506,9 @@ ftp> help
 
 ### 🧭 Quản lý phiên
 
-* `ascii`, `binary` – Chế độ truyền file
-* `status` – Xem trạng thái kết nối
-* `passive` – Bật/tắt chế độ passive
-* `open`, `close`, `quit`, `help`
+* ascii / binary – Chuyển chế độ truyền file (văn bản hoặc nhị phân)
+* status – Hiển thị trạng thái phiên làm việc hiện tại
+* passive – Bật/tắt chế độ Passive FTP
+* open, close – Kết nối / ngắt kết nối với FTP server
+* quit, bye – Thoát chương trình FTP client
+* help, ? – Hiển thị hướng dẫn các lệnh
