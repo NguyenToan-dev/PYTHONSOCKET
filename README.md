@@ -467,23 +467,25 @@ ftp> help
 
 ## 📐 Sơ đồ kiến trúc hệ thống
 
-#  ┌──────────────────────┐        ┌─────────────────────────┐        ┌───────────────────────┐
-#  │      FTP Client      │        │      ClamAV Server      │        │       FTP Server      │
-#  │     (Your code)      │        │   (ClamAV Agent code)   │        │     (FileZilla)       │
-#  └─────────┬────────────┘        └───────────┬─────────────┘        └───────────┬──────────┘
-#            │                                 │                                  │
-#   [1] Gửi tên file + data                    │                                  │
-#       tới quét virus qua TCP socket ─────────►                                  │
-#            │                                 │                                  │
-#            │                         [2] Lưu file tạm và chạy:                  │
-#            │                         `clamdscan <file>`                         │
-#            │                                 │                                  │
-#            ◄─────────────────────── [3] Trả kết quả: OK / INFECTED / ERROR      |
-#            │                                 │                                  │
-#  [4]If OK: Upload file via FTP ───────────────────────────────────────────────► |
-#            │                                 │                                  │
-#            │                                 │                                  │
-
+```plaintext
+ ┌──────────────────────┐        ┌─────────────────────────┐        ┌───────────────────────┐
+ │      FTP Client      │        │      ClamAV Server      │        │       FTP Server      │
+ │     (Your code)      │        │   (ClamAV Agent code)   │        │     (FileZilla)       │
+ └─────────┬────────────┘        └───────────┬─────────────┘        └───────────┬──────────┘
+           │                                 │                                  │
+  [1] Gửi tên file + data                    │                                  │
+      tới quét virus qua TCP socket ─────────►                                  │
+           │                                 │                                  │
+           │                         [2] Lưu file tạm và chạy:                  │
+           │                         `clamdscan <file>`                         │
+           │                                 │                                  │
+           ◄─────────────────────── [3] Trả kết quả: OK / INFECTED / ERROR      |
+           │                                 │                                  │
+ [4]If OK: Upload file via FTP ───────────────────────────────────────────────► |
+           │                                 │                                  │
+           │                                 │                                  │
+```
+---
 
 ## 📜 Các lệnh được hỗ trợ
 
