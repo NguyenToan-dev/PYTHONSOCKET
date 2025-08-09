@@ -467,23 +467,23 @@ ftp> help
 
 ## 📐 Sơ đồ kiến trúc hệ thống
 
-```plaintext
-+------------------+        +---------------------+        +--------------------+
-|   FTP Client     |        |   ClamAV Server     |        |    FTP Server      |
-|  (Your code)     |        | (ClamAV Agent code) |        | (e.g., FileZilla)  |
-+------------------+        +---------------------+        +--------------------+
-         |                          |                              |
-         |----[1] Send file to scan------------------------------->|
-         |                          |                              |
-         |                          |--[2] Run: clamscan <file>--->|
-         |                          |                              |
-         |<------[3] Return scan result: OK / INFECTED / ERROR SCAN
-         |                          |                              |
-         |---[4] If OK: Upload file via FTP----------------------->|
-         |                          |                              |
-```
+#  ┌──────────────────────┐        ┌─────────────────────────┐        ┌───────────────────────┐
+#  │      FTP Client      │        │      ClamAV Server      │        │       FTP Server      │
+#  │     (Your code)      │        │   (ClamAV Agent code)   │        │     (FileZilla)       │
+#  └─────────┬────────────┘        └───────────┬─────────────┘        └───────────┬──────────┘
+#            │                                 │                                  │
+#   [1] Gửi tên file + data                    │                                  │
+#       tới quét virus qua TCP socket ─────────►                                  │
+#            │                                 │                                  │
+#            │                         [2] Lưu file tạm và chạy:                  │
+#            │                         `clamdscan <file>`                         │
+#            │                                 │                                  │
+#            ◄─────────────────────── [3] Trả kết quả: OK / INFECTED / ERROR      |
+#            │                                 │                                  │
+#  [4]If OK: Upload file via FTP ───────────────────────────────────────────────► |
+#            │                                 │                                  │
+#            │                                 │                                  │
 
----
 
 ## 📜 Các lệnh được hỗ trợ
 
