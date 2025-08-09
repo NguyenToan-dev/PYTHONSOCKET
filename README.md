@@ -477,7 +477,7 @@ ftp> help
          |                          |                              |
          |                          |--[2] Run: clamscan <file>--->|
          |                          |                              |
-         |<------[3] Return scan result: OK / INFECTED-------------|
+         |<------[3] Return scan result: OK / INFECTED / ERROR SCAN
          |                          |                              |
          |---[4] If OK: Upload file via FTP----------------------->|
          |                          |                              |
