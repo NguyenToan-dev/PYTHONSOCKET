@@ -505,7 +505,6 @@ class FTPSession:
         Thư mục & File:
           ls [path]  - Liệt kê nội dung thư mục
           cd <path>  - Thay đổi thư mục trên server
-          lcd <path> - Thay đổi thư mục cục bộ
           pwd        - Xem thư mục hiện tại trên server
           mkdir <dir>- Tạo thư mục mới
           rmdir <dir>- Xóa thư mục
@@ -535,3 +534,4 @@ class FTPSession:
         self.close()
         print("👋 Đã thoát chương trình")
         exit(0)
+
