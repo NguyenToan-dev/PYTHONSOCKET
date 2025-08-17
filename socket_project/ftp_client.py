@@ -4,8 +4,8 @@ import os
 import time
 import fnmatch
 import glob
-import shutil
 from config import FTP_HOST, FTP_PORT, FTP_USER, FTP_PASS, CLAMAV_HOST, CLAMAV_PORT
+from typing import Optional, List
 
 class FTPSession:
     def __init__(self):
@@ -17,6 +17,13 @@ class FTPSession:
         self.passive_mode = True
         self.transfer_mode = "binary"  # Mặc định là binary mode
 
+    def _check_connection(self) -> bool:
+        """Kiểm tra xem đã kết nối tới FTP server chưa."""
+        if not self.ctrl:
+            print("❌ Chưa kết nối tới server. Hãy dùng lệnh 'open' trước.")
+            return False
+        return True
+
     def connect_ftp(self):
         if self.ctrl:
             print("⚠️ Đã kết nối tới FTP server. Vui lòng 'close' trước khi kết nối lại.")
@@ -26,15 +33,14 @@ class FTPSession:
         self.ctrl = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.ctrl.connect((FTP_HOST, FTP_PORT))
         self.ctrl_file = self.ctrl.makefile('r', encoding='utf-8')
-        
-        # Đọc phản hồi chào mừng
-        print(self._get_response())
-        
+        print(f"<<< {self._get_response()}")  # Đọc phản hồi chào mừng
+
         # Đăng nhập
         self._send_cmd(f"USER {FTP_USER}")
         self._get_response()
         self._send_cmd(f"PASS {FTP_PASS}")
         self._get_response()
+        self.set_transfer_mode(self.transfer_mode)
         self.pwd()  # Cập nhật thư mục hiện tại
 
     def close(self):
@@ -61,93 +67,184 @@ class FTPSession:
             lines.append(line)
             if re.match(r'^\d{3} ', line):
                 break
-        return lines[-1]
+        return '\n'.join(lines)
 
-    def _setup_passive(self):
-        """Thiết lập kết nối passive và trả về (ip, port)"""
+    def _setup_passive(self) -> tuple[str, int]:
+        """Thiết lập kết nối passive và trả về (ip, port)."""
         self._send_cmd("PASV")
         resp = self._get_response()
         m = re.search(r'(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)', resp)
         if not m:
-            raise Exception(f"Không thể phân tích PASV response: {resp}")
+            raise RuntimeError(f"PASV parse failed: {resp}")
         nums = list(map(int, m.groups()))
         ip = ".".join(map(str, nums[:4]))
         port = nums[4] * 256 + nums[5]
         return (ip, port)
 
-    def list(self, path=""):
+    def _open_active_listener(self) -> socket.socket:
+        """Mở listener cho Active Mode, gửi PORT."""
+        local_ip = '127.0.0.1' if FTP_HOST in ('127.0.0.1', 'localhost') else self.ctrl.getsockname()[0]
+        listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        listener.bind((local_ip, 0))
+        listener.listen(1)
+        ip, port = listener.getsockname()
+        octets = ip.split('.')
+        p1, p2 = divmod(port, 256)
+        self._send_cmd(f"PORT {','.join(octets)},{p1},{p2}")
+        resp = self._get_response()
+        if not resp.startswith('200'):
+            listener.close()
+            raise RuntimeError(f"PORT failed: {resp}")
+        return listener
+
+    def _transfer_command(self, cmd: str, write_func=None) -> bytes:
+        """Thực hiện lệnh truyền dữ liệu RETR/STOR/LIST/NLST."""
+        if not self._check_connection():
+            return b""
         if self.passive_mode:
             ip, port = self._setup_passive()
             data_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             data_sock.connect((ip, port))
         else:
-            # Active mode (không được khuyến nghị)
-            data_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            data_sock.bind(('0.0.0.0', 0))
-            data_sock.listen(1)
-            ip, port = data_sock.getsockname()
-            self._send_cmd(f"PORT {','.join(ip.split('.') + [str(port // 256), str(port % 256)])}")
-            self._get_response()
+            listener = self._open_active_listener()
 
-        # Yêu cầu danh sách
-        cmd = "LIST" if not path else f"LIST {path}"
         self._send_cmd(cmd)
         resp = self._get_response()
         if not resp.startswith('150'):
-            print(f"❌ Lỗi mở kênh dữ liệu: {resp}")
-            data_sock.close()
-            return
+            print(f"❌ {cmd} failed: {resp}")
+            if not self.passive_mode:
+                listener.close()
+            return b""
 
-        # Đọc dữ liệu
-        if self.passive_mode:
-            conn = data_sock
-        else:
-            conn, addr = data_sock.accept()
-        
-        data = b""
-        while True:
-            chunk = conn.recv(4096)
-            if not chunk:
-                break
-            data += chunk
-        
-        conn.close()
         if not self.passive_mode:
-            data_sock.close()
+            listener.settimeout(10)
+            try:
+                conn, _ = listener.accept()
+                data_sock = conn
+            except socket.timeout:
+                listener.close()
+                raise RuntimeError("Timeout waiting for active mode connection")
+            finally:
+                listener.close()
 
-        print("=== DANH SÁCH ===")
-        print(data.decode('utf-8', errors='replace'))
+        buffer = b""
+        try:
+            while True:
+                chunk = data_sock.recv(4096)
+                if not chunk:
+                    break
+                if write_func:
+                    write_func(chunk)
+                else:
+                    buffer += chunk
+        finally:
+            try:
+                data_sock.shutdown(socket.SHUT_WR)
+                data_sock.close()
+            except Exception as e:
+                print(f"⚠️ Lỗi khi đóng socket dữ liệu: {str(e)}")
+
         self._get_response()
+        return buffer
+
+    def list(self, path: str = ""):
+        if not self._check_connection():
+            return
+        cmd = "LIST" if not path else f"LIST {path}"
+        data = self._transfer_command(cmd)
+        if data:
+            print("=== DANH SÁCH ===")
+            print(data.decode('utf-8', errors='replace'))
 
     def pwd(self):
+        if not self._check_connection():
+            return
         self._send_cmd("PWD")
         resp = self._get_response()
         m = re.search(r'"(.+?)"', resp)
         self.current_dir = m.group(1) if m else "/"
         print(f"📂 Thư mục hiện tại: {self.current_dir}")
 
-    def cwd(self, path):
+    def cwd(self, path: str):
+        if not self._check_connection():
+            return
         if path == "..":
             self._send_cmd("CDUP")
         else:
             self._send_cmd(f"CWD {path}")
-        
         resp = self._get_response()
         if resp.startswith('250'):
-            self.pwd()  # Cập nhật thư mục hiện tại
+            self.pwd()
         else:
             print(f"❌ Lỗi CWD: {resp}")
 
-    def lcd(self, path):
-        """Thay đổi thư mục cục bộ"""
-        try:
-            os.chdir(path)
-            self.local_current_dir = os.getcwd()
-            print(f"📂 Thư mục cục bộ hiện tại: {self.local_current_dir}")
-        except Exception as e:
-            print(f"❌ Không thể thay đổi thư mục: {str(e)}")
+    def rmdir(self, folder: str, max_retries=3, retry_delay=5):
+        if not self._check_connection():
+            print(f"❌ Chưa kết nối tới server để xóa thư mục: {folder}")
+            return
+        print(f"📁 Đang xóa thư mục (đệ quy): {folder}")
+        for attempt in range(max_retries):
+            try:
+                # Thử vào thư mục
+                self._send_cmd(f"CWD {folder}")
+                resp = self._get_response()
+                if not resp.startswith("250"):
+                    print(f"❌ Không thể vào thư mục '{folder}': {resp}")
+                    return
+                # Lấy danh sách nội dung
+                data = self._transfer_command("LIST")
+                if not data:
+                    # Thư mục rỗng, quay lại và xóa
+                    self._send_cmd("CWD ..")
+                    self._get_response()
+                    self._send_cmd(f"RMD {folder}")
+                    resp = self._get_response()
+                    if resp.startswith("250"):
+                        print(f"✅ Đã xóa thư mục: {folder}")
+                    else:
+                        print(f"❌ Không thể xóa thư mục: {folder}: {resp}")
+                    return
 
-    def mkdir(self, folder):
+                # Xử lý từng mục
+                for line in data.decode('utf-8', errors='replace').splitlines():
+                    parts = line.split()
+                    if len(parts) < 9:
+                        continue
+                    name = ' '.join(parts[8:])
+                    if name in (".", ".."):
+                        continue
+                    if line.startswith("d"):  # Thư mục
+                        self.rmdir(name, max_retries, retry_delay)  # Gọi đệ quy
+                    else:  # File
+                        self.delete(name)  # Sử dụng hàm delete
+
+                # Quay lại thư mục cha và xóa thư mục
+                self._send_cmd("CWD ..")
+                self._get_response()
+                self._send_cmd(f"RMD {folder}")
+                resp = self._get_response()
+                if resp.startswith("250"):
+                    print(f"✅ Đã xóa thư mục: {folder}")
+                    return
+                else:
+                    print(f"❌ Không thể xóa thư mục: {folder}: {resp}")
+                    raise RuntimeError(f"RMD failed: {resp}")
+
+            except (socket.error, RuntimeError) as e:
+                print(f"⚠️ Lỗi lần thử {attempt + 1}: {e}")
+                if attempt < max_retries - 1:
+                    print(f"🔄 Thử lại sau {retry_delay}s...")
+                    time.sleep(retry_delay)
+                    if not self._check_connection():
+                        print(f"❌ Mất kết nối, không thể xóa thư mục: {folder}")
+                        return
+                else:
+                    print(f"❌ Xóa thư mục thất bại sau {max_retries} lần thử: {folder}")
+                    return
+
+    def mkdir(self, folder: str):
+        if not self._check_connection():
+            return
         self._send_cmd(f"MKD {folder}")
         resp = self._get_response()
         if resp.startswith('257'):
@@ -155,15 +252,14 @@ class FTPSession:
         else:
             print(f"❌ Lỗi MKD: {resp}")
 
-    def rmdir(self, folder):
-        self._send_cmd(f"RMD {folder}")
-        resp = self._get_response()
-        if resp.startswith('250'):
-            print(f"✅ Đã xóa thư mục: {folder}")
-        else:
-            print(f"❌ Lỗi RMD: {resp}")
 
-    def delete(self, filename):
+    def remove_directory_recursive(self, folder_name: str):
+        """Hàm dự phòng, gọi rmdir để tương thích với mã cũ."""
+        self.rmdir(folder_name)
+
+    def delete(self, filename: str):
+        if not self._check_connection():
+            return
         self._send_cmd(f"DELE {filename}")
         resp = self._get_response()
         if resp.startswith('250'):
@@ -171,13 +267,14 @@ class FTPSession:
         else:
             print(f"❌ Lỗi DELE: {resp}")
 
-    def rename(self, old_name, new_name):
+    def rename(self, old_name: str, new_name: str):
+        if not self._check_connection():
+            return
         self._send_cmd(f"RNFR {old_name}")
         resp = self._get_response()
         if not resp.startswith('350'):
             print(f"❌ Lỗi RNFR: {resp}")
             return
-        
         self._send_cmd(f"RNTO {new_name}")
         resp = self._get_response()
         if resp.startswith('250'):
@@ -188,228 +285,195 @@ class FTPSession:
     def status(self):
         print(f"🌐 Đã kết nối: {'✅' if self.ctrl else '❌'}")
         print(f"📂 Thư mục hiện tại: {self.current_dir}")
-        print(f"💻 Thư mục cục bộ: {self.local_current_dir}")
         print(f"🛁 Chế độ passive: {'BẬT' if self.passive_mode else 'TẮT'}")
         print(f"📦 Chế độ truyền: {self.transfer_mode.upper()}")
         print(f"📢 Chế độ xác nhận: {'BẬT' if self.prompt_confirm else 'TẮT'}")
         print(f"📡 Địa chỉ server: {FTP_HOST}:{FTP_PORT}")
         print(f"👤 Người dùng: {FTP_USER}")
 
-    def passive(self, mode=None):
+    def passive(self, mode: Optional[str] = None):
         if mode is None:
             self.passive_mode = not self.passive_mode
         else:
             self.passive_mode = mode.lower() == 'on'
-        
         status = "BẬT" if self.passive_mode else "TẮT"
         print(f"✅ Đã {status} chế độ passive")
 
-    def set_transfer_mode(self, mode):
+    def set_transfer_mode(self, mode: str):
+        if not self._check_connection():
+            return
         mode = mode.lower()
-        if mode in ["ascii", "binary"]:
-            self.transfer_mode = mode
-            self._send_cmd(f"TYPE {mode.upper()[0]}")
-            self._get_response()
+        if mode not in ["ascii", "binary"]:
+            print("❌ Chế độ không hợp lệ. Chọn 'ascii' hoặc 'binary'")
+            return
+        self.transfer_mode = mode
+        type_code = "A" if mode == "ascii" else "I"
+        self._send_cmd(f"TYPE {type_code}")
+        resp = self._get_response()
+        if resp.startswith('200'):
             print(f"✅ Đã chuyển sang chế độ {mode.upper()}")
         else:
-            print("❌ Chế độ không hợp lệ. Chọn 'ascii' hoặc 'binary'")
+            print(f"❌ Lỗi khi chuyển chế độ: {resp}")
 
-    def prompt(self, mode=None):
+    def prompt(self, mode: Optional[str] = None):
         if mode is None:
             self.prompt_confirm = not self.prompt_confirm
         else:
             self.prompt_confirm = mode.lower() == 'on'
-        
         status = "BẬT" if self.prompt_confirm else "TẮT"
         print(f"✅ Đã {status} chế độ xác nhận")
 
-    def download_ftp(self, remote_filename, local_filename=None):
-        if not self.ctrl:
-            print("❌ Chưa kết nối tới server. Hãy dùng lệnh 'open' trước.")
+    def download_ftp(self, remote_filename: str, local_filename: Optional[str] = None):
+        if not self._check_connection():
             return
-
         local_filename = local_filename or os.path.basename(remote_filename)
         local_path = os.path.join(self.local_current_dir, local_filename)
-
-        if self.passive_mode:
-            ip, port = self._setup_passive()
-            data_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            data_sock.connect((ip, port))
-        else:
-            data_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            data_sock.bind(('0.0.0.0', 0))
-            data_sock.listen(1)
-            ip, port = data_sock.getsockname()
-            self._send_cmd(f"PORT {','.join(ip.split('.') + [str(port // 256), str(port % 256)])}")
-            self._get_response()
-
-        self._send_cmd(f"RETR {remote_filename}")
-        resp = self._get_response()
-        if not resp.startswith('150'):
-            print(f"❌ Server từ chối tải file: {resp}")
-            return
-
-        if self.passive_mode:
-            conn = data_sock
-        else:
-            conn, addr = data_sock.accept()
-
         start_time = time.time()
         total_bytes = 0
-        
+
         try:
-            with open(local_path, 'wb') as f:
-                while True:
-                    chunk = conn.recv(4096)
-                    if not chunk:
-                        break
+            mode = 'wb' if self.transfer_mode == "binary" else 'w'
+            encoding = None if self.transfer_mode == "binary" else 'utf-8'
+            with open(local_path, mode, encoding=encoding) as f:
+                def write_func(chunk):
+                    if self.transfer_mode == "ascii":
+                        chunk = chunk.decode('utf-8', errors='replace').replace('\r\n', '\n')
                     f.write(chunk)
-                    total_bytes += len(chunk)
+                data = self._transfer_command(f"RETR {remote_filename}", write_func=write_func)
+                total_bytes = os.path.getsize(local_path) if os.path.exists(local_path) else 0
         except Exception as e:
-            print(f"❌ Lỗi khi ghi file: {str(e)}")
+            print(f"❌ Lỗi khi tải file: {str(e)}")
             if os.path.exists(local_path):
                 os.remove(local_path)
-        
-        conn.close()
-        if not self.passive_mode:
-            data_sock.close()
+            return
 
         transfer_time = time.time() - start_time
-        resp = self._get_response()
-        
-        if resp.startswith('226'):
-            print(f"✅ Tải thành công: {remote_filename} → {local_path}")
-            print(f"📊 Kích thước: {total_bytes} bytes | "
-                f"Thời gian: {transfer_time:.2f}s | "
-                f"Tốc độ: {total_bytes/transfer_time/1024:.2f} KB/s")
-        else:
-            print(f"❌ Lỗi khi tải file: {resp}")
+        print(f"✅ Tải thành công: {remote_filename} → {local_path}")
+        print(f"📊 Kích thước: {total_bytes} bytes | "
+              f"Thời gian: {transfer_time:.2f}s | "
+              f"Tốc độ: {total_bytes/transfer_time/1024:.2f} KB/s" if transfer_time > 0 else "")
 
-    def upload_ftp(self, local_filename, remote_filename=None):
-        # Kiểm tra file cục bộ
+    def upload_ftp(self, local_filename: str, remote_filename: Optional[str] = None) -> bool:
         local_path = os.path.join(self.local_current_dir, local_filename)
         if not os.path.exists(local_path):
             print(f"❌ File cục bộ không tồn tại: {local_path}")
             return False
-            
-        # Quét virus
+
         print(f"🔍 Đang quét virus: {local_filename}")
         if not self.scan_with_clamav(local_path):
             print("🔴 KHÔNG thể upload do file chứa virus hoặc lỗi quét!")
             return False
-            
-        if not self.ctrl:
-            print("❌ Chưa kết nối tới server. Hãy dùng lệnh 'open' trước.")
+
+        if not self._check_connection():
             return False
 
         remote_filename = remote_filename or os.path.basename(local_filename)
+        start_time = time.time()
+        total_bytes = 0
 
         if self.passive_mode:
             ip, port = self._setup_passive()
             data_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             data_sock.connect((ip, port))
         else:
-            data_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            data_sock.bind(('0.0.0.0', 0))
-            data_sock.listen(1)
-            ip, port = data_sock.getsockname()
-            self._send_cmd(f"PORT {','.join(ip.split('.') + [str(port // 256), str(port % 256)])}")
-            self._get_response()
+            listener = self._open_active_listener()
 
         self._send_cmd(f"STOR {remote_filename}")
         resp = self._get_response()
         if not resp.startswith('150'):
             print(f"❌ Server từ chối upload file: {resp}")
+            if not self.passive_mode:
+                listener.close()
             return False
 
-        if self.passive_mode:
-            conn = data_sock
-        else:
-            conn, addr = data_sock.accept()
+        if not self.passive_mode:
+            listener.settimeout(10)
+            try:
+                conn, _ = listener.accept()
+                data_sock = conn
+            except socket.timeout:
+                listener.close()
+                raise RuntimeError("Timeout waiting for active mode connection")
+            finally:
+                listener.close()
 
-        start_time = time.time()
-        total_bytes = 0
-        
         try:
-            with open(local_path, 'rb') as f:
+            mode = 'rb' if self.transfer_mode == "binary" else 'r'
+            encoding = None if self.transfer_mode == "binary" else 'utf-8'
+            with open(local_path, mode, encoding=encoding) as f:
                 while True:
                     chunk = f.read(4096)
                     if not chunk:
                         break
-                    conn.sendall(chunk)
+                    if self.transfer_mode == "ascii":
+                        chunk = chunk.replace('\n', '\r\n').encode('utf-8', errors='replace')
+                    else:
+                        chunk = chunk if isinstance(chunk, bytes) else chunk.encode('utf-8')
+                    data_sock.sendall(chunk)
                     total_bytes += len(chunk)
         except Exception as e:
             print(f"❌ Lỗi khi đọc file: {str(e)}")
-        
-        conn.close()
-        if not self.passive_mode:
             data_sock.close()
+            return False
+        finally:
+            try:
+                data_sock.shutdown(socket.SHUT_WR)
+                data_sock.close()
+            except Exception as e:
+                print(f"⚠️ Lỗi khi đóng socket dữ liệu: {str(e)}")
 
         transfer_time = time.time() - start_time
         resp = self._get_response()
-        
         if resp.startswith('226'):
             print(f"✅ Upload thành công: {local_path} → {remote_filename}")
             print(f"📊 Kích thước: {total_bytes} bytes | "
-                f"Thời gian: {transfer_time:.2f}s | "
-                f"Tốc độ: {total_bytes/transfer_time/1024:.2f} KB/s")
+                  f"Thời gian: {transfer_time:.2f}s | "
+                  f"Tốc độ: {total_bytes/transfer_time/1024:.2f} KB/s" if transfer_time > 0 else "")
             return True
         else:
             print(f"❌ Lỗi khi upload file: {resp}")
             return False
 
-    def scan_with_clamav(self, file_path):
-        """Kết nối tới ClamAV Agent"""
+    def scan_with_clamav(self, file_path: str) -> bool:
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((CLAMAV_HOST, CLAMAV_PORT))
-                
-                # Gửi tên file
-                s.sendall(os.path.basename(file_path).encode() + b"\n")
-                
-                # Gửi nội dung file
+                s.sendall(os.path.basename(file_path).encode('utf-8') + b"\n")
                 with open(file_path, 'rb') as f:
                     while True:
                         chunk = f.read(4096)
                         if not chunk:
                             break
                         s.sendall(chunk)
-                
-                # Đánh dấu kết thúc
-                s.sendall(b"===SCAN_DONE===")
-                
-                # Nhận kết quả
-                return s.recv(1024) == b'OK'
+                s.sendall(b"===SCAN_DONE===\n")
+                s.settimeout(10)
+                response = s.recv(1024).decode('utf-8').strip()
+                if response == 'OK':
+                    print("✅ File sạch, không chứa virus")
+                    return True
+                else:
+                    print(f"🔴 File có vấn đề: {response}")
+                    return False
         except Exception as e:
             print(f"❌ Lỗi quét virus: {str(e)}")
             return False
 
-    def mget(self, pattern):
-        """Tải nhiều file từ server"""
-        if not self.ctrl:
-            print("❌ Chưa kết nối tới server. Hãy dùng lệnh 'open' trước.")
+    def mget(self, pattern: str):
+        if not self._check_connection():
             return
-
-        # Lấy danh sách file
         files = self._get_file_list()
         matched_files = fnmatch.filter(files, pattern)
-        
         if not matched_files:
             print(f"🔍 Không tìm thấy file nào khớp: {pattern}")
             return
-        
         print(f"🔍 Tìm thấy {len(matched_files)} file:")
         for i, f in enumerate(matched_files, 1):
             print(f"  {i}. {f}")
-        
-        # Xác nhận với người dùng
         if self.prompt_confirm:
             confirm = input("Bạn có muốn tải tất cả? (y/n): ").lower()
             if confirm != 'y':
                 print("⏩ Đã hủy tải")
                 return
-        
-        # Tải từng file
         success = 0
         for file in matched_files:
             try:
@@ -418,31 +482,22 @@ class FTPSession:
                 success += 1
             except Exception as e:
                 print(f"❌ Lỗi khi tải {file}: {str(e)}")
-        
         print(f"✅ Đã tải thành công {success}/{len(matched_files)} file")
 
-    def mput(self, pattern):
-        """Upload nhiều file lên server"""
-        # Tìm file cục bộ
+    def mput(self, pattern: str):
         matched_files = glob.glob(os.path.join(self.local_current_dir, pattern))
         matched_files = [f for f in matched_files if os.path.isfile(f)]
-        
         if not matched_files:
             print(f"🔍 Không tìm thấy file nào khớp: {pattern}")
             return
-        
         print(f"🔍 Tìm thấy {len(matched_files)} file:")
         for i, f in enumerate(matched_files, 1):
             print(f"  {i}. {os.path.basename(f)}")
-        
-        # Xác nhận với người dùng
         if self.prompt_confirm:
             confirm = input("Bạn có muốn upload tất cả? (y/n): ").lower()
             if confirm != 'y':
                 print("⏩ Đã hủy upload")
                 return
-        
-        # Upload từng file
         success = 0
         for file in matched_files:
             try:
@@ -451,47 +506,13 @@ class FTPSession:
                     success += 1
             except Exception as e:
                 print(f"❌ Lỗi khi upload {file}: {str(e)}")
-        
         print(f"✅ Đã upload thành công {success}/{len(matched_files)} file")
 
-    def _get_file_list(self):
-        """Lấy danh sách file từ server"""
-        if self.passive_mode:
-            ip, port = self._setup_passive()
-            data_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            data_sock.connect((ip, port))
-        else:
-            data_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            data_sock.bind(('0.0.0.0', 0))
-            data_sock.listen(1)
-            ip, port = data_sock.getsockname()
-            self._send_cmd(f"PORT {','.join(ip.split('.') + [str(port // 256), str(port % 256)])}")
-            self._get_response()
-
-        self._send_cmd("NLST")
-        resp = self._get_response()
-        if not resp.startswith('150'):
-            print(f"❌ Lỗi lấy danh sách file: {resp}")
+    def _get_file_list(self) -> List[str]:
+        if not self._check_connection():
             return []
-
-        if self.passive_mode:
-            conn = data_sock
-        else:
-            conn, addr = data_sock.accept()
-
-        data = b""
-        while True:
-            chunk = conn.recv(4096)
-            if not chunk:
-                break
-            data += chunk
-        
-        conn.close()
-        if not self.passive_mode:
-            data_sock.close()
-
-        self._get_response()
-        return data.decode('utf-8').splitlines()
+        data = self._transfer_command("NLST")
+        return data.decode('utf-8', errors='replace').splitlines()
 
     def help(self):
         print("""
@@ -507,7 +528,7 @@ class FTPSession:
           cd <path>  - Thay đổi thư mục trên server
           pwd        - Xem thư mục hiện tại trên server
           mkdir <dir>- Tạo thư mục mới
-          rmdir <dir>- Xóa thư mục
+          rmdir <dir>- Xóa thư mục và toàn bộ nội dung
           delete <f> - Xóa file
           rename <o> <n> - Đổi tên file/thư mục
         
@@ -527,6 +548,7 @@ class FTPSession:
         Khác:
           help/?     - Hiển thị trợ giúp này
         
+        Lưu ý: Cần 'open' để kết nối trước khi sử dụng các lệnh liên quan đến server.
         ===========================================================
         """)
 
@@ -534,4 +556,3 @@ class FTPSession:
         self.close()
         print("👋 Đã thoát chương trình")
         exit(0)
-
